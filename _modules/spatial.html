@@ -1,0 +1,947 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>spatial &mdash; Ca source separation 0.0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Ca source separation 0.0.2 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Ca source separation 0.0.2 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for spatial</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Wed Aug 05 20:38:27 2015</span>
+
+<span class="sd"># -*- coding: utf-8 -*-</span>
+<span class="sd">@author: agiovann</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="c">#from scipy.sparse import coo_matrix as coom</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">coo_matrix</span> <span class="p">,</span><span class="n">csc_matrix</span>      
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">spdiags</span>
+<span class="kn">from</span> <span class="nn">scipy.linalg</span> <span class="kn">import</span> <span class="n">eig</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.morphology</span> <span class="kn">import</span> <span class="n">generate_binary_structure</span><span class="p">,</span> <span class="n">iterate_structure</span>
+<span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
+<span class="kn">import</span> <span class="nn">scipy</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">picos</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&#39;picos not installed&#39;</span>
+    
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">cvxopt</span> <span class="kn">import</span> <span class="n">matrix</span><span class="p">,</span> <span class="n">spmatrix</span><span class="p">,</span> <span class="n">spdiag</span><span class="p">,</span> <span class="n">solvers</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&#39;cvxopt not installed&#39;</span>
+
+<span class="c">#import sys</span>
+<span class="c">#sys.path</span>
+<span class="c">#sys.path.append(path_to_folder)</span>
+<span class="k">def</span> <span class="nf">basis_denoising</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">boh</span><span class="p">,</span><span class="n">sn</span><span class="p">,</span><span class="n">id2_</span><span class="p">,</span><span class="n">px</span><span class="p">):</span>           
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">_</span> <span class="p">,</span> <span class="n">_</span><span class="o">=</span> <span class="n">lars_regression_noise</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sn</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">a</span><span class="p">,</span><span class="n">px</span><span class="p">,</span><span class="n">id2_</span>
+<span class="c">#%%</span>
+<div class="viewcode-block" id="update_spatial_components"><a class="viewcode-back" href="../core_functions.html#spatial.update_spatial_components">[docs]</a><span class="k">def</span> <span class="nf">update_spatial_components</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">A_in</span><span class="p">,</span><span class="n">d1</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">d2</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">min_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">max_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span><span class="n">dist</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">sn</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">n_processes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s">&#39;ellipse&#39;</span><span class="p">,</span> <span class="n">expandCore</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;update spatial footprints and background     </span>
+<span class="sd">    through Basis Pursuit Denoising</span>
+
+<span class="sd">    for each pixel i solve the problem </span>
+<span class="sd">        [A(i,:),b(i)] = argmin sum(A(i,:))</span>
+<span class="sd">    subject to </span>
+<span class="sd">        || Y(i,:) - A(i,:)*C + b(i)*f || &lt;= sn(i)*sqrt(T);</span>
+<span class="sd">    </span>
+<span class="sd">    for each pixel the search is limited to a few spatial components</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------   </span>
+<span class="sd">    Y: np.ndarray (2D)</span>
+<span class="sd">        movie, raw data in 2D (pixels x time).</span>
+<span class="sd">    C: np.ndarray</span>
+<span class="sd">        calcium activity of each neuron. </span>
+<span class="sd">    f: np.ndarray</span>
+<span class="sd">        temporal profile  of background activity.</span>
+<span class="sd">    Ain: np.ndarray</span>
+<span class="sd">        spatial profile of background activity.    </span>
+<span class="sd">        </span>
+<span class="sd">    d1: [optional] int</span>
+<span class="sd">        x movie dimension</span>
+<span class="sd">    d2: [optional] int</span>
+<span class="sd">        y movie dimension</span>
+<span class="sd">    min_size: [optional] int</span>
+<span class="sd">        </span>
+<span class="sd">    max_size: [optional] int</span>
+<span class="sd">        </span>
+<span class="sd">    dist: [optional] int</span>
+<span class="sd">        </span>
+<span class="sd">    sn: [optional] float</span>
+<span class="sd">        </span>
+<span class="sd">    n_processes: [optional] int</span>
+<span class="sd">        </span>
+<span class="sd">    method: [optional] string</span>
+<span class="sd">        </span>
+<span class="sd">    expandCore: [optional]  scipy.ndimage.morphology</span>
+<span class="sd">        </span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    </span>
+<span class="sd">    A: np.ndarray        </span>
+<span class="sd">         new estimate of spatial footprints</span>
+<span class="sd">    b: np.ndarray</span>
+<span class="sd">        new estimate of spatial background</span>
+<span class="sd">    C: np.ndarray        </span>
+<span class="sd">         temporal components (updated only when spatial components are completely removed)             </span>
+<span class="sd">       </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">expandCore</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">expandCore</span><span class="o">=</span><span class="n">iterate_structure</span><span class="p">(</span><span class="n">generate_binary_structure</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">d1</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">d2</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;You need to define the input dimensions&#39;</span><span class="p">)</span>
+    
+    <span class="n">Y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Dimension of Matrix Y must be pixels x time&#39;</span><span class="p">)</span>
+    
+    <span class="n">C</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Dimension of Matrix C must be neurons x time&#39;</span><span class="p">)</span>
+    
+    <span class="n">f</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Dimension of Matrix f must be neurons x time &#39;</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">A_in</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">A_in</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">A_in</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="k">if</span> <span class="n">A_in</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Dimension of Matrix A must be pixels x neurons &#39;</span><span class="p">)</span>
+    
+    
+    <span class="n">Cf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">C</span><span class="p">,</span><span class="n">f</span><span class="p">))</span>
+    
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="p">[</span><span class="n">d</span><span class="p">,</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+    <span class="n">nr</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>       <span class="c"># number of neurons</span>
+    
+    <span class="n">IND</span> <span class="o">=</span> <span class="n">determine_search_location</span><span class="p">(</span><span class="n">A_in</span><span class="p">,</span><span class="n">d1</span><span class="p">,</span><span class="n">d2</span><span class="p">,</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span><span class="p">,</span> <span class="n">min_size</span> <span class="o">=</span> <span class="n">min_size</span><span class="p">,</span> <span class="n">max_size</span> <span class="o">=</span> <span class="n">max_size</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">dist</span><span class="p">,</span> <span class="n">expandCore</span> <span class="o">=</span> <span class="n">expandCore</span><span class="p">)</span>
+    
+    <span class="n">IND</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">IND</span><span class="p">)</span> <span class="c"># indices per pixel</span>
+    
+    <span class="n">Y_</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="c"># list per pixel</span>
+    
+    <span class="n">ind2_</span> <span class="o">=</span><span class="p">[</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">iid_</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="p">,</span> <span class="n">nr</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="p">)</span>   <span class="k">if</span>  <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">iid_</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span><span class="o">&gt;</span><span class="mi">0</span>  <span class="k">else</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">iid_</span> <span class="ow">in</span> <span class="n">IND</span><span class="p">]</span>
+
+    <span class="n">Cf_</span><span class="o">=</span><span class="p">[</span><span class="n">Cf</span><span class="p">[</span><span class="n">idx_</span><span class="p">,:]</span> <span class="k">for</span> <span class="n">idx_</span> <span class="ow">in</span> <span class="n">ind2_</span><span class="p">]</span>
+
+    <span class="c">#% LARS regression </span>
+    <span class="n">A_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">d</span><span class="p">,</span><span class="n">nr</span><span class="p">)),</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">d</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="mi">0</span><span class="p">)))))</span>
+    
+    <span class="k">if</span> <span class="n">n_processes</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Still atexperimental stage. Use n_processes=1&#39;</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&#39;Starting Pool of Workers...&#39;</span>
+        <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>        
+        <span class="k">try</span><span class="p">:</span> 
+            <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">n_processes</span><span class="p">)</span>  
+            <span class="n">mod_inputs</span><span class="o">=</span><span class="p">[(</span><span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">T</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sn</span><span class="p">[</span><span class="n">px</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">T</span><span class="p">,</span><span class="n">id2_</span><span class="p">,</span><span class="n">px</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">id2_</span><span class="p">,</span><span class="n">px</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">Cf_</span><span class="p">,</span><span class="n">Y_</span><span class="p">,</span><span class="n">sn</span><span class="p">,</span><span class="n">ind2_</span><span class="p">,</span><span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">))]</span>              
+            <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">basis_denoising</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">y_</span><span class="p">,</span><span class="n">c_</span><span class="p">,</span><span class="n">boh_</span><span class="p">,</span><span class="n">sn_</span><span class="p">,</span><span class="n">id2__</span><span class="p">,</span><span class="n">px_</span><span class="p">))</span> <span class="k">for</span> <span class="n">y_</span><span class="p">,</span><span class="n">c_</span><span class="p">,</span><span class="n">boh_</span><span class="p">,</span><span class="n">sn_</span><span class="p">,</span><span class="n">id2__</span><span class="p">,</span><span class="n">px_</span> <span class="ow">in</span> <span class="n">mod_inputs</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">a_</span><span class="p">,</span><span class="n">px_</span><span class="p">,</span><span class="n">id2__</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">a_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">A_</span><span class="p">[</span><span class="n">px_</span><span class="p">,</span><span class="n">id2__</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">a_</span><span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>    
+            <span class="c">#p.join()    </span>
+            <span class="k">print</span> <span class="s">&#39;Shutting down Workers...&#39;</span>
+        <span class="k">except</span><span class="p">:</span>             
+             <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>    
+             <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+             <span class="k">raise</span>
+        <span class="c">#pool = mp.Pool(processes=8)</span>
+        <span class="c">#results = [pool.apply(basis_pursuit_denoising, args=(x.T,y.T,z)) for x,y,z in zip(Y_,Cf_,sn)]</span>
+        <span class="c">#print(results)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">id2_</span><span class="p">,</span><span class="n">px</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">Cf_</span><span class="p">,</span><span class="n">Y_</span><span class="p">,</span><span class="n">sn</span><span class="p">,</span><span class="n">ind2_</span><span class="p">,</span><span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">px</span><span class="o">%</span><span class="mi">1000</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> 
+                    <span class="k">print</span> <span class="n">px</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>                
+                <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">_</span> <span class="p">,</span> <span class="n">_</span><span class="o">=</span> <span class="n">lars_regression_noise</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">T</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sn</span><span class="p">[</span><span class="n">px</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">T</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+                    <span class="n">A_</span><span class="p">[</span><span class="n">px</span><span class="p">,</span><span class="n">id2_</span><span class="p">]</span><span class="o">=</span><span class="n">a</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">A_</span><span class="p">[</span><span class="n">px</span><span class="p">,</span><span class="n">id2_</span><span class="p">]</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">T</span>
+              
+                
+                
+    
+    <span class="c">#%</span>
+    <span class="k">print</span> <span class="s">&#39;Updated Spatial Components&#39;</span>
+    <span class="n">A_</span><span class="o">=</span><span class="n">threshold_components</span><span class="p">(</span><span class="n">A_</span><span class="p">,</span> <span class="n">d1</span><span class="p">,</span> <span class="n">d2</span><span class="p">)</span>
+    <span class="n">ff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">A_</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">);</span>           <span class="c"># remove empty components</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">ff</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">ff</span> <span class="o">=</span> <span class="n">ff</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">warn</span><span class="p">(</span><span class="s">&#39;eliminating empty components!!&#39;</span><span class="p">)</span>
+        <span class="n">nr</span> <span class="o">=</span> <span class="n">nr</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">ff</span><span class="p">)</span>
+        <span class="n">A_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">A_</span><span class="p">,</span><span class="nb">list</span><span class="p">(</span><span class="n">ff</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="nb">list</span><span class="p">(</span><span class="n">ff</span><span class="p">),</span><span class="mi">0</span><span class="p">)</span>
+<span class="c">#        raise Exception(&#39;Eliminated empty component. Reduce number of neurons&#39;)</span>
+        
+    <span class="n">Y_res</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A_</span><span class="p">[:,:</span><span class="n">nr</span><span class="p">],</span><span class="n">C</span><span class="p">[:</span><span class="n">nr</span><span class="p">,:])</span>
+    <span class="n">A_bas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Y_res</span><span class="p">,</span><span class="n">f</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">/</span><span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="c"># update baseline based on residual</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">A_bas</span>
+    <span class="n">A_</span> <span class="o">=</span> <span class="n">A_</span><span class="p">[:,:</span><span class="n">nr</span><span class="p">]</span>    
+            
+    <span class="n">A_</span><span class="o">=</span><span class="n">coo_matrix</span><span class="p">(</span><span class="n">A_</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&quot;--- </span><span class="si">%s</span><span class="s"> seconds ---&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">A_</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">C</span>
+
+<span class="c">#%%</span></div>
+<span class="k">def</span> <span class="nf">determine_search_location</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">d1</span><span class="p">,</span> <span class="n">d2</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s">&#39;ellipse&#39;</span><span class="p">,</span> <span class="n">min_size</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">max_size</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">expandCore</span> <span class="o">=</span> <span class="n">iterate_structure</span><span class="p">(</span><span class="n">generate_binary_structure</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)):</span>
+
+    <span class="kn">from</span> <span class="nn">scipy.ndimage.morphology</span> <span class="kn">import</span> <span class="n">grey_dilation</span> 
+    <span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">coo_matrix</span><span class="p">,</span> <span class="n">issparse</span>
+
+    <span class="n">d</span><span class="p">,</span> <span class="n">nr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+    
+    <span class="n">A</span> <span class="o">=</span> <span class="n">csc_matrix</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+        
+    <span class="n">IND</span> <span class="o">=</span> <span class="bp">False</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">d</span><span class="p">,</span><span class="n">nr</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;ellipse&#39;</span><span class="p">:</span>
+        <span class="n">Coor</span><span class="o">=</span><span class="nb">dict</span><span class="p">();</span>
+        <span class="n">Coor</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">d2</span><span class="p">,</span><span class="mi">1</span><span class="p">)),</span><span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">d1</span><span class="p">),</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">));</span> 
+        <span class="n">Coor</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">d2</span><span class="p">),</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">d1</span><span class="p">,</span><span class="mi">1</span><span class="p">)));</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dist</span><span class="o">==</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">:</span>             <span class="c"># determine search area for each neuron</span>
+            <span class="n">cm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nr</span><span class="p">,</span><span class="mi">2</span><span class="p">));</span>        <span class="c"># vector for center of mass</span>
+            <span class="n">Vr</span> <span class="o">=</span> <span class="p">[]</span>    <span class="c"># cell(nr,1);</span>
+            <span class="n">IND</span> <span class="o">=</span> <span class="p">[];</span>       <span class="c"># indicator for distance								   </span>
+            <span class="n">cm</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Coor</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">A</span><span class="p">[:,:</span><span class="n">nr</span><span class="p">]</span><span class="o">.</span><span class="n">todense</span><span class="p">())</span><span class="o">/</span><span class="n">A</span><span class="p">[:,:</span><span class="n">nr</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">cm</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Coor</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">A</span><span class="p">[:,:</span><span class="n">nr</span><span class="p">]</span><span class="o">.</span><span class="n">todense</span><span class="p">())</span><span class="o">/</span><span class="n">A</span><span class="p">[:,:</span><span class="n">nr</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> 
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nr</span><span class="p">):</span>            <span class="c"># calculation of variance for each component and construction of ellipses</span>
+                <span class="n">dist_cm</span><span class="o">=</span><span class="n">coo_matrix</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">Coor</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">cm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">Coor</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">cm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">])))</span>            
+                <span class="n">Vr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dist_cm</span><span class="o">.</span><span class="n">T</span><span class="o">*</span><span class="n">spdiags</span><span class="p">(</span><span class="n">A</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(),</span><span class="mi">0</span><span class="p">,</span><span class="n">d</span><span class="p">,</span><span class="n">d</span><span class="p">)</span><span class="o">*</span><span class="n">dist_cm</span><span class="o">/</span><span class="n">A</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>        
+                <span class="n">D</span><span class="p">,</span><span class="n">V</span><span class="o">=</span><span class="n">eig</span><span class="p">(</span><span class="n">Vr</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>        
+                <span class="n">d11</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">((</span><span class="n">max_size</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">min_size</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">D</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">real</span><span class="p">))))</span>
+                <span class="n">d22</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">((</span><span class="n">max_size</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">min_size</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">D</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">real</span><span class="p">))))</span>
+                <span class="n">IND</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">dist_cm</span><span class="o">*</span><span class="n">V</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">d11</span> <span class="o">+</span> <span class="p">(</span><span class="n">dist_cm</span><span class="o">*</span><span class="n">V</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">d22</span><span class="p">)</span><span class="o">&lt;=</span><span class="n">dist</span><span class="p">)</span>       <span class="c"># search indexes for each component</span>
+
+            <span class="n">IND</span><span class="o">=</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">IND</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">IND</span> <span class="o">=</span> <span class="bp">True</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">d</span><span class="p">,</span><span class="n">nr</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;dilate&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nr</span><span class="p">):</span>
+            <span class="n">A_temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">A</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">todense</span><span class="p">(),(</span><span class="n">d2</span><span class="p">,</span><span class="n">d1</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">expandCore</span><span class="p">)</span><span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">A_temp</span> <span class="o">=</span> <span class="n">grey_dilation</span><span class="p">(</span><span class="n">A_temp</span><span class="p">,</span> <span class="n">footprint</span> <span class="o">=</span> <span class="n">expandCore</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">A_temp</span> <span class="o">=</span> <span class="n">grey_dilation</span><span class="p">(</span><span class="n">A_temp</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>            
+            
+<span class="c">#            A_temp = grey_dilation(A_temp, footprint = expandCore)</span>
+            <span class="n">IND</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">A_temp</span><span class="p">,(</span><span class="n">d</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span><span class="o">&gt;</span><span class="mi">0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">IND</span> <span class="o">=</span> <span class="bp">True</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">d</span><span class="p">,</span><span class="n">nr</span><span class="p">))</span>
+            
+    <span class="k">return</span> <span class="n">IND</span>
+
+    
+<span class="c">#%%</span>
+<span class="k">def</span> <span class="nf">threshold_components</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">d1</span><span class="p">,</span> <span class="n">d2</span><span class="p">,</span> <span class="n">medw</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span> <span class="n">thr</span> <span class="o">=</span> <span class="mf">0.9999</span><span class="p">,</span> <span class="n">se</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">),</span> <span class="n">ss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)):</span>
+        
+    <span class="kn">from</span> <span class="nn">scipy.ndimage.filters</span> <span class="kn">import</span> <span class="n">median_filter</span>
+    <span class="kn">from</span> <span class="nn">scipy.ndimage.morphology</span> <span class="kn">import</span> <span class="n">binary_closing</span>    
+    <span class="kn">from</span> <span class="nn">scipy.ndimage.measurements</span> <span class="kn">import</span> <span class="n">label</span>    
+    
+    <span class="n">d</span><span class="p">,</span> <span class="n">nr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+    <span class="n">Ath</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">d</span><span class="p">,</span><span class="n">nr</span><span class="p">))</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nr</span><span class="p">):</span>
+        <span class="n">A_temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">A</span><span class="p">[:,</span><span class="n">i</span><span class="p">],(</span><span class="n">d2</span><span class="p">,</span><span class="n">d1</span><span class="p">))</span>
+        <span class="n">A_temp</span> <span class="o">=</span> <span class="n">median_filter</span><span class="p">(</span><span class="n">A_temp</span><span class="p">,</span><span class="n">medw</span><span class="p">)</span>
+        <span class="n">Asor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">A_temp</span><span class="p">,(</span><span class="n">d</span><span class="p">,</span><span class="mi">1</span><span class="p">))))[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">Asor</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">ff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">temp</span><span class="o">&lt;</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">thr</span><span class="p">)</span><span class="o">*</span><span class="n">temp</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">ff</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">ff</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">A_temp</span><span class="p">[</span><span class="n">A_temp</span><span class="o">&lt;</span><span class="n">Asor</span><span class="p">[</span><span class="n">ind</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">BW</span> <span class="o">=</span> <span class="p">(</span><span class="n">A_temp</span><span class="o">&gt;=</span><span class="n">Asor</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">BW</span> <span class="o">=</span> <span class="p">(</span><span class="n">A_temp</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">)</span>
+            
+        <span class="n">Ath</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">A_temp</span><span class="p">,(</span><span class="n">d</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+        <span class="n">BW</span> <span class="o">=</span> <span class="n">binary_closing</span><span class="p">(</span><span class="n">BW</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">),</span><span class="n">structure</span> <span class="o">=</span> <span class="n">se</span><span class="p">)</span>
+        <span class="n">labeled_array</span><span class="p">,</span> <span class="n">num_features</span> <span class="o">=</span> <span class="n">label</span><span class="p">(</span><span class="n">BW</span><span class="p">,</span> <span class="n">structure</span><span class="o">=</span><span class="n">ss</span><span class="p">)</span>
+        <span class="n">BW</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">BW</span><span class="p">,(</span><span class="n">d</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">labeled_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">labeled_array</span><span class="p">,(</span><span class="n">d</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+        <span class="n">nrg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_features</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_features</span><span class="p">):</span>
+            <span class="n">nrg</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Ath</span><span class="p">[</span><span class="n">labeled_array</span><span class="o">==</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            
+        <span class="n">indm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">nrg</span><span class="p">)</span>
+        <span class="n">Ath</span><span class="p">[</span><span class="n">labeled_array</span><span class="o">==</span><span class="n">indm</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">labeled_array</span><span class="o">==</span><span class="n">indm</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">i</span><span class="p">]</span>
+        
+    <span class="k">return</span> <span class="n">Ath</span>
+        
+<span class="c">#%%</span>
+<span class="k">def</span> <span class="nf">lars_regression_noise</span><span class="p">(</span><span class="n">Yp</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">positive</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">     Run LARS for regression problems with LASSO penalty, with optional positivity constraints</span>
+<span class="sd">     Author: Andrea Giovannucci. Adapted code from Eftychios Pnevmatikakis</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">     Input Parameters:</span>
+<span class="sd">       Yp:          Yp[:,t] is the observed data at time t</span>
+<span class="sd">       X:           the regresion problem is Yp=X*W + noise</span>
+<span class="sd">       maxcomps:    maximum number of active components to allow</span>
+<span class="sd">       positive:    a flag to enforce positivity</span>
+<span class="sd">       noise:       the noise of the observation equation. if it is not</span>
+<span class="sd">                    provided as an argument, the noise is computed from the</span>
+<span class="sd">                    variance at the end point of the algorithm. The noise is</span>
+<span class="sd">                    used in the computation of the Cp criterion.</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">     Output Parameters:</span>
+<span class="sd">       Ws: weights from each iteration</span>
+<span class="sd">       lambdas: lambda_ values at each iteration</span>
+<span class="sd">       TODO: W_lam, lam, flag</span>
+<span class="sd">       Cps: C_p estimates</span>
+<span class="sd">       last_break:     last_break(m) == n means that the last break with m non-zero weights is at Ws(:,:,n)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c">#%%</span>
+    
+    <span class="c">#verbose=true;</span>
+    
+    
+    
+    <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span>    
+    <span class="n">Yp</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Yp</span><span class="p">))</span>
+    
+    <span class="n">Yp</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">Yp</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="c">#necessary for matrix multiplications</span>
+    
+    <span class="n">_</span><span class="p">,</span><span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">Yp</span><span class="p">);</span> <span class="c"># of time steps</span>
+    <span class="n">_</span><span class="p">,</span><span class="n">N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">X</span><span class="p">);</span> <span class="c"># of compartments</span>
+    
+    <span class="n">maxcomps</span> <span class="o">=</span> <span class="n">N</span><span class="p">;</span>    
+    <span class="n">W</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">k</span><span class="p">));</span>
+    <span class="n">active_set</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">k</span><span class="p">));</span>
+    <span class="n">visited_set</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">k</span><span class="p">));</span>    
+    <span class="n">lambdas</span> <span class="o">=</span> <span class="p">[];</span>  
+    <span class="n">Ws</span><span class="o">=</span><span class="p">[]</span> <span class="c">#=np.zeros((W.shape[0],W.shape[1],maxcomps));  # Just preallocation. Ws may end with more or less than maxcomp columns       </span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">Yp</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>       <span class="c"># N-dim vector</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="o">-</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">X</span><span class="p">);</span>            <span class="c"># N x N matrix </span>
+    
+    <span class="c">#%% begin main loop    </span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">flag</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">while</span> <span class="mi">1</span><span class="p">:</span>       
+        <span class="k">if</span> <span class="n">flag</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">W_lam</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">break</span><span class="p">;</span>
+    <span class="c">#% calculate new gradient component if necessary    </span>
+        <span class="k">if</span> <span class="n">i</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">new</span><span class="o">&gt;=</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">visited_set</span><span class="p">[</span><span class="n">new</span><span class="p">]</span> <span class="o">==</span><span class="mi">0</span><span class="p">:</span> <span class="c"># AG NOT CLEAR HERE    </span>
+            <span class="n">visited_set</span><span class="p">[</span><span class="n">new</span><span class="p">]</span> <span class="o">=</span><span class="mi">1</span><span class="p">;</span>    <span class="c">#% remember this direction was computed    </span>
+ 
+    <span class="c">#% Compute full gradient of Q     </span>
+        <span class="n">dQ</span> <span class="o">=</span> <span class="n">r</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="n">W</span><span class="p">);</span>
+            
+    <span class="c">#% Compute new W</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>            
+            <span class="k">if</span> <span class="n">positive</span><span class="p">:</span>
+                <span class="n">dQa</span> <span class="o">=</span> <span class="n">dQ</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dQa</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dQ</span><span class="p">)</span>            
+            <span class="n">lambda_</span><span class="p">,</span> <span class="n">new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">dQa</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">dQa</span><span class="p">)</span>
+        
+            <span class="k">if</span> <span class="n">lambda_</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;All negative directions!&#39;</span>
+                <span class="k">break</span>                        
+        <span class="k">else</span><span class="p">:</span>
+    
+            <span class="c">#% calculate vector to travel along                    </span>
+            <span class="n">avec</span><span class="p">,</span> <span class="n">gamma_plus</span><span class="p">,</span> <span class="n">gamma_minus</span> <span class="o">=</span> <span class="n">calcAvec</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">dQ</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">lambda_</span><span class="p">,</span> <span class="n">active_set</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">positive</span><span class="p">)</span>       
+            
+           <span class="c"># % calculate time of travel and next new direction                   </span>
+            <span class="k">if</span> <span class="n">new</span><span class="o">==-</span><span class="mi">1</span><span class="p">:</span>                              <span class="c"># % if we just dropped a direction we don&#39;t allow it to emerge </span>
+                <span class="k">if</span> <span class="n">dropped_sign</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>               <span class="c"># % with the same sign</span>
+                    <span class="n">gamma_plus</span><span class="p">[</span><span class="n">dropped</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">gamma_minus</span><span class="p">[</span><span class="n">dropped</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">;</span>
+    
+            <span class="n">gamma_plus</span><span class="p">[</span><span class="n">active_set</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>       <span class="c">#% don&#39;t consider active components </span>
+            <span class="n">gamma_plus</span><span class="p">[</span><span class="n">gamma_plus</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>       <span class="c">#% or components outside the range [0, lambda_]</span>
+            <span class="n">gamma_plus</span><span class="p">[</span><span class="n">gamma_plus</span><span class="o">&gt;</span> <span class="n">lambda_</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+            <span class="n">gp_min</span><span class="p">,</span> <span class="n">gp_min_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">gamma_plus</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">gamma_plus</span><span class="p">)</span>
+    
+            <span class="k">if</span> <span class="n">positive</span><span class="p">:</span>
+                <span class="n">gm_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">;</span>                         <span class="c">#% don&#39;t consider new directions that would grow negative</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">gamma_minus</span><span class="p">[</span><span class="n">active_set</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>            
+                <span class="n">gamma_minus</span><span class="p">[</span><span class="n">gamma_minus</span><span class="o">&gt;</span> <span class="n">lambda_</span><span class="p">]</span> <span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                <span class="n">gamma_minus</span><span class="p">[</span><span class="n">gamma_minus</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                <span class="n">gm_min</span><span class="p">,</span> <span class="n">gm_min_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">gamma_minus</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">gamma_minus</span><span class="p">)</span>
+  
+            <span class="p">[</span><span class="n">g_min</span><span class="p">,</span> <span class="n">which</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">gp_min</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">gp_min</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">g_min</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">:</span>               <span class="c">#% if there are no possible new components, try move to the end</span>
+                <span class="n">g_min</span> <span class="o">=</span> <span class="n">lambda_</span><span class="p">;</span>            <span class="c">#% This happens when all the components are already active or, if positive==1, when there are no new positive directions </span>
+   
+            <span class="c">#% LARS check  (is g_min*avec too large?)</span>
+            <span class="n">gamma_zero</span> <span class="o">=</span> <span class="o">-</span><span class="n">W</span><span class="p">[</span><span class="n">active_set</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>  <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">avec</span><span class="p">);</span>
+            <span class="n">gamma_zero_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">k</span><span class="p">));</span>
+            <span class="n">gamma_zero_full</span><span class="p">[</span><span class="n">active_set</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">gamma_zero</span><span class="p">;</span>
+            <span class="n">gamma_zero_full</span><span class="p">[</span><span class="n">gamma_zero_full</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">;</span>
+            <span class="n">gz_min</span><span class="p">,</span> <span class="n">gz_min_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">gamma_zero_full</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">gamma_zero_full</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">gz_min</span> <span class="o">&lt;</span> <span class="n">g_min</span><span class="p">:</span>       
+<span class="c">#                print &#39;check_here&#39;</span>
+                <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                   <span class="k">print</span> <span class="s">&#39;DROPPING active weight:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">gz_min_ind</span><span class="p">)</span>
+                
+                <span class="n">active_set</span><span class="p">[</span><span class="n">gz_min_ind</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+                <span class="n">dropped</span> <span class="o">=</span> <span class="n">gz_min_ind</span><span class="p">;</span>
+                <span class="n">dropped_sign</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">W</span><span class="p">[</span><span class="n">dropped</span><span class="p">]);</span>
+                <span class="n">W</span><span class="p">[</span><span class="n">gz_min_ind</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+                <span class="n">avec</span> <span class="o">=</span> <span class="n">avec</span><span class="p">[</span><span class="n">gamma_zero</span> <span class="o">!=</span> <span class="n">gz_min</span><span class="p">];</span>
+                <span class="n">g_min</span> <span class="o">=</span> <span class="n">gz_min</span><span class="p">;</span>
+                <span class="n">new</span><span class="o">=-</span><span class="mi">1</span> <span class="c"># new = 0;</span>
+                
+                
+            <span class="k">elif</span> <span class="n">g_min</span> <span class="o">&lt;</span> <span class="n">lambda_</span><span class="p">:</span>            
+                <span class="k">if</span>  <span class="n">which</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">new</span> <span class="o">=</span> <span class="n">gp_min_ind</span><span class="p">;</span>
+                    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                        <span class="k">print</span> <span class="s">&#39;new positive component:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">new</span><span class="p">)</span>
+                    
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new</span> <span class="o">=</span> <span class="n">gm_min_ind</span><span class="p">;</span>
+                    <span class="k">print</span> <span class="s">&#39;new negative component:&#39;</span> <span class="o">+</span>  <span class="nb">str</span><span class="p">(</span><span class="n">new</span><span class="p">)</span>
+                                   
+            <span class="n">W</span><span class="p">[</span><span class="n">active_set</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">W</span><span class="p">[</span><span class="n">active_set</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">g_min</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">avec</span><span class="p">));</span>
+            
+            <span class="k">if</span> <span class="n">positive</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">W</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">):</span>
+                    <span class="c">#min(W);</span>
+                    <span class="n">flag</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+                    <span class="c">#%error(&#39;negative W component&#39;);</span>
+            
+            <span class="n">lambda_</span> <span class="o">=</span> <span class="n">lambda_</span> <span class="o">-</span> <span class="n">g_min</span><span class="p">;</span>    
+    
+    <span class="c">#%  Update weights and lambdas </span>
+            
+        <span class="n">lambdas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lambda_</span><span class="p">);</span>    
+        <span class="n">Ws</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+        
+    <span class="c">#    print Ws</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">((</span><span class="n">Yp</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">W</span><span class="p">))</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">2</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">Yp</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">W</span><span class="p">)),</span><span class="s">&#39;fro&#39;</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">Yp</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">W</span><span class="p">),</span><span class="s">&#39;fro&#39;</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">;</span>
+        
+    <span class="c">#% Check finishing conditions                </span>
+        <span class="k">if</span> <span class="n">lambda_</span> <span class="o">==</span><span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">new</span><span class="o">&gt;=</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">active_set</span><span class="p">)</span> <span class="o">==</span> <span class="n">maxcomps</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">res</span> <span class="o">&lt;</span> <span class="n">noise</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;end. </span><span class="se">\n</span><span class="s">&#39;</span>        
+            <span class="k">break</span>
+    
+        <span class="c">#%   </span>
+        <span class="k">if</span> <span class="n">new</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">:</span>        
+            <span class="n">active_set</span><span class="p">[</span><span class="n">new</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                
+        <span class="n">i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+    
+    <span class="n">Ws_old</span><span class="o">=</span><span class="n">Ws</span>
+    <span class="c"># end main loop </span>
+    <span class="c">#%% final calculation of mus</span>
+    <span class="n">Ws</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="n">Ws_old</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">flag</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">Ws</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">Ws</span><span class="p">[:,:,:</span><span class="nb">len</span><span class="p">(</span><span class="n">lambdas</span><span class="p">)]);</span>
+            <span class="n">w_dir</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">Ws</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">Ws</span><span class="p">[:,</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">lambdas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">lambdas</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]);</span>
+            <span class="n">Aw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">w_dir</span><span class="p">);</span>
+            <span class="n">y_res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">Yp</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Ws</span><span class="p">[:,</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">w_dir</span><span class="o">*</span><span class="n">lambdas</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]);</span>
+            <span class="n">ld</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">roots</span><span class="p">([</span><span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">Aw</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Aw</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">y_res</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">y_res</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">y_res</span><span class="p">)</span><span class="o">-</span><span class="n">noise</span><span class="p">]);</span>
+            <span class="n">lam</span> <span class="o">=</span> <span class="n">ld</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ld</span><span class="o">&gt;</span><span class="n">lambdas</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ld</span><span class="o">&lt;</span><span class="n">lambdas</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]))];</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lam</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>  <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">lam</span><span class="p">)</span><span class="o">&lt;</span><span class="mi">0</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isreal</span><span class="p">(</span><span class="n">lam</span><span class="p">)):</span>
+                <span class="n">lam</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lambdas</span><span class="p">[</span><span class="n">i</span><span class="p">]]);</span>
+            
+            <span class="n">W_lam</span> <span class="o">=</span> <span class="n">Ws</span><span class="p">[:,</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">w_dir</span><span class="p">,</span><span class="n">lambdas</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">lam</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warn</span><span class="p">(</span><span class="s">&#39;LARS REGRESSION NOT SOLVABLE, USING NN LEAST SQUARE&#39;</span><span class="p">)</span>
+            <span class="n">W_lam</span><span class="o">=</span><span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">nnls</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Yp</span><span class="p">)</span>
+<span class="c">#            problem = picos.Problem(X,Yp)</span>
+<span class="c">#            W_lam = problem.add_variable(&#39;W_lam&#39;, X.shape[1])</span>
+<span class="c">#            problem.set_objective(&#39;min&#39;, 1|W_lam)</span>
+<span class="c">#            problem.add_constraint(W_lam &gt;= 0)</span>
+<span class="c">#            problem.add_constraint(picos.norm(matrix(Yp.astype(np.float))-matrix(X.astype(np.float))*W_lam,2)&lt;=np.sqrt(noise))</span>
+<span class="c">#            sel_solver = []</span>
+<span class="c">#            problem.solver_selection()</span>
+<span class="c">#            problem.solve(verbose=True)</span>
+            
+            
+    <span class="c">#        cvx_begin quiet</span>
+    <span class="c">#            variable W_lam(size(X,2));</span>
+    <span class="c">#            minimize(sum(W_lam));</span>
+    <span class="c">#            subject to</span>
+    <span class="c">#                W_lam &gt;= 0;</span>
+    <span class="c">#                norm(Yp-X*W_lam)&lt;= sqrt(noise);</span>
+    <span class="c">#        cvx_end</span>
+            <span class="n">lam</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+        
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">W_lam</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="n">Ws</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="n">lambdas</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> 
+        <span class="n">lam</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        
+    <span class="k">return</span> <span class="n">Ws</span><span class="p">,</span> <span class="n">lambdas</span><span class="p">,</span> <span class="n">W_lam</span><span class="p">,</span> <span class="n">lam</span><span class="p">,</span> <span class="n">flag</span>
+
+<span class="c">#%%  auxiliary functions</span>
+<span class="k">def</span> <span class="nf">calcAvec</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">dQ</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">lambda_</span><span class="p">,</span> <span class="n">active_set</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">positive</span><span class="p">):</span>
+    <span class="c"># TODO: comment</span>
+    <span class="n">r</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">active_set</span><span class="p">)</span>    
+<span class="c">#    [r,c] = find(active_set);</span>
+    <span class="n">Mm</span> <span class="o">=</span> <span class="o">-</span><span class="n">M</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    
+    
+    <span class="n">Mm</span><span class="o">=</span><span class="p">(</span><span class="n">Mm</span> <span class="o">+</span> <span class="n">Mm</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">;</span>
+    
+    <span class="c">#% verify that there is no numerical instability </span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Mm</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+<span class="c">#        print Mm.shape</span>
+        <span class="n">eigMm</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">Mm</span><span class="p">)</span>
+        <span class="n">eigMm</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">eigMm</span><span class="p">)</span>
+<span class="c">#        check_here</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">eigMm</span><span class="o">=</span><span class="n">Mm</span>
+    
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">eigMm</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">eigMm</span><span class="p">)</span>
+        <span class="c">#%error(&#39;The matrix Mm has negative eigenvalues&#39;)  </span>
+        <span class="n">flag</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+    
+    
+    
+    <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">W</span><span class="p">);</span>
+    
+    <span class="k">if</span> <span class="n">new</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">b</span><span class="p">[</span><span class="n">new</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">dQ</span><span class="p">[</span><span class="n">new</span><span class="p">]);</span>
+    
+    <span class="n">b</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="n">active_set</span> <span class="o">==</span> <span class="mi">1</span><span class="p">];</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Mm</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">avec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">Mm</span><span class="p">,</span><span class="n">b</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">avec</span><span class="o">=</span><span class="n">b</span><span class="o">/</span><span class="n">Mm</span>
+
+    
+    <span class="k">if</span> <span class="n">positive</span><span class="p">:</span> 
+        <span class="k">if</span> <span class="n">new</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">:</span> 
+            <span class="n">in_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">active_set</span><span class="p">[:</span><span class="n">new</span><span class="p">]);</span>
+            <span class="k">if</span> <span class="n">avec</span><span class="p">[</span><span class="n">in_</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c">#new;</span>
+                <span class="c">#%error(&#39;new component of a is negative&#39;)</span>
+                <span class="n">flag</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>                        
+    
+        
+    
+    <span class="n">one_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">);</span>
+    
+    <span class="n">dQa</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">);</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)):</span>
+        <span class="n">dQa</span> <span class="o">=</span> <span class="n">dQa</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">avec</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">M</span><span class="p">[:,</span> <span class="n">r</span><span class="p">[</span><span class="n">j</span><span class="p">]],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">);</span>
+    
+    
+    <span class="n">gamma_plus</span> <span class="o">=</span> <span class="p">(</span><span class="n">lambda_</span> <span class="o">-</span> <span class="n">dQ</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">one_vec</span> <span class="o">+</span> <span class="n">dQa</span><span class="p">);</span>
+    <span class="n">gamma_minus</span> <span class="o">=</span> <span class="p">(</span><span class="n">lambda_</span> <span class="o">+</span> <span class="n">dQ</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">one_vec</span> <span class="o">-</span> <span class="n">dQa</span><span class="p">);</span>
+    
+    <span class="k">return</span> <span class="n">avec</span><span class="p">,</span> <span class="n">gamma_plus</span><span class="p">,</span> <span class="n">gamma_minus</span>
+
+<span class="c">##%%</span>
+<span class="c">#def lars_regression_noise_matrix(Yp, X, positive, noise,verbose=False):</span>
+<span class="c">#    </span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#     Run LARS for regression problems with LASSO penalty, with optional positivity constraints</span>
+<span class="c">#     Author: Andrea Giovannucci. Adapted code from Eftychios Pnevmatikakis</span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#     Input Parameters:</span>
+<span class="c">#       Yp:          Yp[:,t] is the observed data at time t</span>
+<span class="c">#       X:           the regresion problem is Yp=X*W + noise </span>
+<span class="c">#       maxcomps:    maximum number of active components to allow</span>
+<span class="c">#       positive:    a flag to enforce positivity</span>
+<span class="c">#       noise:       the noise of the observation equation. if it is not</span>
+<span class="c">#                    provided as an argument, the noise is computed from the</span>
+<span class="c">#                    variance at the end point of the algorithm. The noise is</span>
+<span class="c">#                    used in the computation of the Cp criterion.</span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#     Output Parameters:</span>
+<span class="c">#       Ws: weights from each iteration</span>
+<span class="c">#       lambdas: lambda_ values at each iteration</span>
+<span class="c">#       TODO: W_lam, lam, flag</span>
+<span class="c">#       Cps: C_p estimates</span>
+<span class="c">#       last_break:     last_break(m) == n means that the last break with m non-zero weights is at Ws(:,:,n)</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    #%%</span>
+<span class="c">#    </span>
+<span class="c">#    #verbose=true;</span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#    k=1;    </span>
+<span class="c">#    </span>
+<span class="c">##    Yp=np.expand_dims(Yp,axis=1) #necessary for matrix multiplications</span>
+<span class="c">#    Yp=np.atleast_2d(Yp)</span>
+<span class="c">#    if Yp.shape[1]==1:</span>
+<span class="c">#        raise Exception(&#39;Dimension of Matrix Yp must be pixels x time&#39;)</span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#    X=np.matrix(X)            </span>
+<span class="c">#    if X.shape[0]==1:</span>
+<span class="c">#         raise Exception(&#39;Dimension of Matrix X must be pixels x neurons &#39;)</span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#    _,T = np.shape(Yp); # of time steps</span>
+<span class="c">#    _,N = np.shape(X); # of compartments</span>
+<span class="c">#    </span>
+<span class="c">#    maxcomps = N;    </span>
+<span class="c">#    W = np.zeros((N,k));</span>
+<span class="c">#    active_set = np.zeros((N,k));</span>
+<span class="c">#    visited_set = np.zeros((N,k));    </span>
+<span class="c">#    lambdas = [];  </span>
+<span class="c">#    Ws=[] #=np.zeros((W.shape[0],W.shape[1],maxcomps));  # Just preallocation. Ws may end with more or less than maxcomp columns       </span>
+<span class="c">#    r = X.T*Yp.T       # N-dim vector</span>
+<span class="c">#    M = -X.T*X;            # N x N matrix </span>
+<span class="c">#    </span>
+<span class="c">#    #%% begin main loop</span>
+<span class="c">#    </span>
+<span class="c">#    i = 0;</span>
+<span class="c">#    flag = 0;</span>
+<span class="c">#</span>
+<span class="c">#    while 1:</span>
+<span class="c">#        </span>
+<span class="c">#        if flag == 1:</span>
+<span class="c">#            W_lam = 0</span>
+<span class="c">#            break;</span>
+<span class="c">#        </span>
+<span class="c">##        print i</span>
+<span class="c">#        </span>
+<span class="c">#    #% calculate new gradient component if necessary    </span>
+<span class="c">#        if i&gt;0 and new&gt;=0 and visited_set[new] ==0: # AG NOT CLEAR HERE</span>
+<span class="c">#    </span>
+<span class="c">#            visited_set[new] =1;    #% remember this direction was computed    </span>
+<span class="c">#        </span>
+<span class="c">#    </span>
+<span class="c">#    #% Compute full gradient of Q     </span>
+<span class="c">#        dQ = r + np.dot(M,W);</span>
+<span class="c">#            </span>
+<span class="c">#    #% Compute new W</span>
+<span class="c">#        if i == 0:</span>
+<span class="c">#            </span>
+<span class="c">#            if positive:</span>
+<span class="c">#                dQa = dQ</span>
+<span class="c">#            else:</span>
+<span class="c">#                dQa = np.abs(dQ)</span>
+<span class="c">#            </span>
+<span class="c">#            lambda_, new = np.max(dQa),np.argmax(dQa)</span>
+<span class="c">#            </span>
+<span class="c">#            #[lambda_, new] = max(dQa(:));</span>
+<span class="c">#        </span>
+<span class="c">#            if lambda_ &lt; 0:</span>
+<span class="c">#                print &#39;All negative directions!&#39;</span>
+<span class="c">#                break</span>
+<span class="c">#            </span>
+<span class="c">#            </span>
+<span class="c">#        else:</span>
+<span class="c">#    </span>
+<span class="c">#            #% calculate vector to travel along          </span>
+<span class="c">#            </span>
+<span class="c">#            avec, gamma_plus, gamma_minus = calcAvec(new, dQ, W, lambda_, active_set, M, positive)       </span>
+<span class="c">#            </span>
+<span class="c">#           # % calculate time of travel and next new direction </span>
+<span class="c">#                    </span>
+<span class="c">#            if new==-1:                              # % if we just dropped a direction we don&#39;t allow it to emerge </span>
+<span class="c">#                if dropped_sign == 1:               # % with the same sign</span>
+<span class="c">#                    gamma_plus[dropped] = np.inf;</span>
+<span class="c">#                else:</span>
+<span class="c">#                    gamma_minus[dropped] = np.inf;</span>
+<span class="c">#                </span>
+<span class="c">#            </span>
+<span class="c">#                       </span>
+<span class="c">#    </span>
+<span class="c">#            gamma_plus[active_set == 1] = np.inf       #% don&#39;t consider active components </span>
+<span class="c">#            gamma_plus[gamma_plus &lt;= 0] = np.inf       #% or components outside the range [0, lambda_]</span>
+<span class="c">#            gamma_plus[gamma_plus&gt; lambda_] = np.inf</span>
+<span class="c">#            gp_min, gp_min_ind = np.min(gamma_plus),np.argmin(gamma_plus)</span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#            if positive:</span>
+<span class="c">#                gm_min = np.inf;                         #% don&#39;t consider new directions that would grow negative</span>
+<span class="c">#            else:</span>
+<span class="c">#                gamma_minus[active_set == 1] = np.inf            </span>
+<span class="c">#                gamma_minus[gamma_minus&gt; lambda_] =np.inf</span>
+<span class="c">#                gamma_minus[gamma_minus &lt;= 0] = np.inf</span>
+<span class="c">#                gm_min, gm_min_ind = np.min(gamma_minus),np.argmin(gamma_minus)</span>
+<span class="c">#    </span>
+<span class="c">#            </span>
+<span class="c">#    </span>
+<span class="c">#            [g_min, which] = np.min(gp_min),np.argmin(gp_min)</span>
+<span class="c">#            </span>
+<span class="c">#        </span>
+<span class="c">#    </span>
+<span class="c">#            if g_min == np.inf:               #% if there are no possible new components, try move to the end</span>
+<span class="c">#                g_min = lambda_;            #% This happens when all the components are already active or, if positive==1, when there are no new positive directions </span>
+<span class="c">#            </span>
+<span class="c">#                     </span>
+<span class="c">#            </span>
+<span class="c">#    </span>
+<span class="c">#            #% LARS check  (is g_min*avec too large?)</span>
+<span class="c">#            gamma_zero = -W[active_set == 1]  / np.squeeze(np.asarray(avec));</span>
+<span class="c">#            gamma_zero_full = np.zeros((N,k));</span>
+<span class="c">#            gamma_zero_full[active_set == 1] = gamma_zero;</span>
+<span class="c">#            gamma_zero_full[gamma_zero_full &lt;= 0] = np.inf;</span>
+<span class="c">#            gz_min, gz_min_ind = np.min(gamma_zero_full),np.argmin(gamma_zero_full)</span>
+<span class="c">#            </span>
+<span class="c">#            if gz_min &lt; g_min:       </span>
+<span class="c">##                print &#39;check_here&#39;</span>
+<span class="c">#                if verbose:</span>
+<span class="c">#                   print &#39;DROPPING active weight:&#39; + str(gz_min_ind)</span>
+<span class="c">#                </span>
+<span class="c">#                active_set[gz_min_ind] = 0;</span>
+<span class="c">#                dropped = gz_min_ind;</span>
+<span class="c">#                dropped_sign = np.sign(W[dropped]);</span>
+<span class="c">#                W[gz_min_ind] = 0;</span>
+<span class="c">#                avec = avec[gamma_zero != gz_min];</span>
+<span class="c">#                g_min = gz_min;</span>
+<span class="c">#                new=-1 # new = 0;</span>
+<span class="c">#                </span>
+<span class="c">#                </span>
+<span class="c">#            elif g_min &lt; lambda_:            </span>
+<span class="c">#                if  which == 0:</span>
+<span class="c">#                    new = gp_min_ind;</span>
+<span class="c">#                    if verbose:</span>
+<span class="c">#                        print &#39;new positive component:&#39; + str(new)</span>
+<span class="c">#                    </span>
+<span class="c">#                else:</span>
+<span class="c">#                    new = gm_min_ind;</span>
+<span class="c">#                    print &#39;new negative component:&#39; +  str(new)</span>
+<span class="c">#                                   </span>
+<span class="c">#            W[active_set == 1] = W[active_set == 1] + np.dot(g_min,np.squeeze(np.asarray(avec)));</span>
+<span class="c">#            </span>
+<span class="c">#            if positive:</span>
+<span class="c">#                if any(W&lt;0):</span>
+<span class="c">#                    #min(W);</span>
+<span class="c">#                    flag = 1;</span>
+<span class="c">#                    #%error(&#39;negative W component&#39;);</span>
+<span class="c">#    </span>
+<span class="c">#            </span>
+<span class="c">#            lambda_ = lambda_ - g_min;    </span>
+<span class="c">#    </span>
+<span class="c">#    #%  Update weights and lambdas </span>
+<span class="c">#            </span>
+<span class="c">#        lambdas.append(lambda_);    </span>
+<span class="c">#        Ws.append(W.copy())</span>
+<span class="c">#        </span>
+<span class="c">#    #    print Ws</span>
+<span class="c">#        if len((Yp-np.dot(X,W)).shape)&gt;2:</span>
+<span class="c">#            res = scipy.linalg.norm(np.squeeze(Yp-np.dot(X,W)),&#39;fro&#39;)**2;</span>
+<span class="c">#        else:</span>
+<span class="c">#            res = scipy.linalg.norm(Yp-np.dot(X,W),&#39;fro&#39;)**2;</span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#    #% Check finishing conditions                </span>
+<span class="c">#        if lambda_ ==0 or (new&gt;=0 and np.sum(active_set) == maxcomps) or (res &lt; noise):</span>
+<span class="c">#            if verbose:</span>
+<span class="c">#                print &#39;end. \n&#39;        </span>
+<span class="c">#            break</span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#    #%   </span>
+<span class="c">#        if new&gt;=0:        </span>
+<span class="c">#            active_set[new] = 1</span>
+<span class="c">#        </span>
+<span class="c">#        </span>
+<span class="c">#        i = i + 1</span>
+<span class="c">#    </span>
+<span class="c">#    Ws_old=Ws</span>
+<span class="c">#    # end main loop </span>
+<span class="c">#    #%% final calculation of mus</span>
+<span class="c">#    Ws=np.asarray(np.swapaxes(np.swapaxes(Ws_old,0,1),1,2))</span>
+<span class="c">#    if flag == 0:</span>
+<span class="c">#        if i &gt; 0:</span>
+<span class="c">#            Ws= np.squeeze(Ws[:,:,:len(lambdas)]);</span>
+<span class="c">#            w_dir = -(Ws[:,i] - Ws[:,i-1])/(lambdas[i]-lambdas[i-1]);</span>
+<span class="c">#            Aw = np.dot(X,w_dir);</span>
+<span class="c">#            y_res = Yp - np.dot(X,Ws[:,i-1] + w_dir*lambdas[i-1])</span>
+<span class="c">#            y_res=y_res.T</span>
+<span class="c">#            ld = scipy.roots([scipy.linalg.norm(Aw)**2,-2*Aw*y_res,np.dot(y_res.T,y_res)-noise]);</span>
+<span class="c">#            lam = ld[np.intersect1d(np.where(ld&gt;lambdas[i]),np.where(ld&lt;lambdas[i-1]))];</span>
+<span class="c">#            if len(lam) == 0  or np.any(lam)&lt;0 or np.any(~np.isreal(lam)):</span>
+<span class="c">#                lam = np.array([lambdas[i]]);</span>
+<span class="c">#            </span>
+<span class="c">#            W_lam = Ws[:,i-1] + np.dot(w_dir,lambdas[i-1]-lam[0]);</span>
+<span class="c">#        else:</span>
+<span class="c">#            problem = picos.Problem()</span>
+<span class="c">#            W_lam = problem.add_variable(&#39;W_lam&#39;, X.shape[1])</span>
+<span class="c">#            problem.set_objective(&#39;min&#39;, 1|W_lam)</span>
+<span class="c">#            problem.add_constraint(W_lam &gt;= 0)</span>
+<span class="c">#            problem.add_constraint(picos.norm(matrix(Yp.astype(np.float))-matrix(X.astype(np.float))*W_lam,2)&lt;=np.sqrt(noise))</span>
+<span class="c">#            sel_solver = []</span>
+<span class="c">#            problem.solver_selection()</span>
+<span class="c">#            problem.solve(verbose=True)</span>
+<span class="c">#           </span>
+<span class="c">#            </span>
+<span class="c">#    #        cvx_begin quiet</span>
+<span class="c">#    #            variable W_lam(size(X,2));</span>
+<span class="c">#    #            minimize(sum(W_lam));</span>
+<span class="c">#    #            subject to</span>
+<span class="c">#    #                W_lam &gt;= 0;</span>
+<span class="c">#    #                norm(Yp-X*W_lam)&lt;= sqrt(noise);</span>
+<span class="c">#    #        cvx_end</span>
+<span class="c">#            lam = 10;</span>
+<span class="c">#        </span>
+<span class="c">#    else:</span>
+<span class="c">#        W_lam = 0;</span>
+<span class="c">#        Ws = 0;</span>
+<span class="c">#        lambdas = 0; </span>
+<span class="c">#        lam = 0;</span>
+<span class="c">#        </span>
+<span class="c">#    return Ws, lambdas, W_lam, lam, flag</span>
+<span class="c">#</span>
+<span class="c">##%%  auxiliary functions</span>
+<span class="c">#def calcAvec_matrix(new, dQ, W, lambda_, active_set, M, positive):</span>
+<span class="c">#    # TODO: comment</span>
+<span class="c">#    r,c=np.nonzero(active_set)    </span>
+<span class="c">##    [r,c] = find(active_set);</span>
+<span class="c">#    Mm = -M.take(r,axis=0).take(r,axis=1)</span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#    Mm=(Mm + Mm.T)/2;</span>
+<span class="c">#    </span>
+<span class="c">#    #% verify that there is no numerical instability </span>
+<span class="c">#    if len(Mm)&gt;1:</span>
+<span class="c">##        print Mm.shape</span>
+<span class="c">#        eigMm,_ = scipy.linalg.eig(Mm)</span>
+<span class="c">#        eigMm=np.real(eigMm)</span>
+<span class="c">##        check_here</span>
+<span class="c">#    else:</span>
+<span class="c">#        eigMm=Mm</span>
+<span class="c">#    </span>
+<span class="c">#    if any(eigMm &lt; 0):</span>
+<span class="c">#        np.min(eigMm)</span>
+<span class="c">#        #%error(&#39;The matrix Mm has negative eigenvalues&#39;)  </span>
+<span class="c">#        flag = 1;</span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#    b = np.sign(W);</span>
+<span class="c">#    </span>
+<span class="c">#    if new&gt;=0:</span>
+<span class="c">#        b[new] = np.sign(dQ[new]);</span>
+<span class="c">#    </span>
+<span class="c">#    b = b[active_set == 1];</span>
+<span class="c">#    </span>
+<span class="c">#    if len(Mm)&gt;1:</span>
+<span class="c">#        avec = np.linalg.solve(Mm,b)</span>
+<span class="c">#    else:</span>
+<span class="c">#        avec=b/Mm</span>
+<span class="c">#</span>
+<span class="c">#    </span>
+<span class="c">#    if positive: </span>
+<span class="c">#        if new&gt;=0: </span>
+<span class="c">#            in_ = np.sum(active_set[:new]);</span>
+<span class="c">#            if avec[in_] &lt; 0:</span>
+<span class="c">#                #new;</span>
+<span class="c">#                #%error(&#39;new component of a is negative&#39;)</span>
+<span class="c">#                flag = 1;                        </span>
+<span class="c">#    </span>
+<span class="c">#        </span>
+<span class="c">#    </span>
+<span class="c">#    one_vec = np.ones(W.shape);</span>
+<span class="c">#    </span>
+<span class="c">#    dQa = np.zeros(W.shape);</span>
+<span class="c">#    for j in range(len(r)):</span>
+<span class="c">#        dQa = dQa + np.multiply(avec[j],M[:, r[j]]);</span>
+<span class="c">#    </span>
+<span class="c">#    </span>
+<span class="c">#    gamma_plus = (lambda_ - dQ)/(one_vec + dQa);</span>
+<span class="c">#    gamma_minus = (lambda_ + dQ)/(one_vec - dQa);</span>
+<span class="c">#    </span>
+<span class="c">#    return avec, gamma_plus, gamma_minus</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Ca source separation 0.0.2 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, AG and EP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>
