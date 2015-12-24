@@ -1,0 +1,366 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Core Functions &mdash; Ca source separation 0.0.2 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Ca source separation 0.0.2 documentation" href="index.html" />
+    <link rel="prev" title="Ca source separation documentation" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="index.html" title="Ca source separation documentation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Ca source separation 0.0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="core-functions">
+<h1>Core Functions<a class="headerlink" href="#core-functions" title="Permalink to this headline">¶</a></h1>
+<p>Functions that are required to operate the package at a basic level</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#pre_processing.preprocess_data" title="pre_processing.preprocess_data"><code class="xref py py-obj docutils literal"><span class="pre">pre_processing.preprocess_data</span></code></a>(Y[,&nbsp;sn,&nbsp;...])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#initialization.initialize_components" title="initialization.initialize_components"><code class="xref py py-obj docutils literal"><span class="pre">initialization.initialize_components</span></code></a>(Y[,&nbsp;K,&nbsp;...])</td>
+<td>Initalize components</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#spatial.update_spatial_components" title="spatial.update_spatial_components"><code class="xref py py-obj docutils literal"><span class="pre">spatial.update_spatial_components</span></code></a>(Y,&nbsp;C,&nbsp;f,&nbsp;A_in)</td>
+<td>update spatial footprints and background</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#temporal.update_temporal_components" title="temporal.update_temporal_components"><code class="xref py py-obj docutils literal"><span class="pre">temporal.update_temporal_components</span></code></a>(Y,&nbsp;A,&nbsp;b,&nbsp;...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#merging.mergeROIS" title="merging.mergeROIS"><code class="xref py py-obj docutils literal"><span class="pre">merging.mergeROIS</span></code></a>(Y_res,&nbsp;A,&nbsp;b,&nbsp;C,&nbsp;f,&nbsp;S,&nbsp;d1,&nbsp;...)</td>
+<td>merging of spatially overlapping components that have highly correlated tmeporal activity</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#utilities.local_correlations" title="utilities.local_correlations"><code class="xref py py-obj docutils literal"><span class="pre">utilities.local_correlations</span></code></a>(Y[,&nbsp;...])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#utilities.plot_contours" title="utilities.plot_contours"><code class="xref py py-obj docutils literal"><span class="pre">utilities.plot_contours</span></code></a>(A,&nbsp;Cn[,&nbsp;thr,&nbsp;...])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#utilities.view_patches" title="utilities.view_patches"><code class="xref py py-obj docutils literal"><span class="pre">utilities.view_patches</span></code></a>(Yr,&nbsp;A,&nbsp;C,&nbsp;b,&nbsp;f,&nbsp;d1,&nbsp;d2)</td>
+<td>view spatial and temporal components</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#utilities.order_components" title="utilities.order_components"><code class="xref py py-obj docutils literal"><span class="pre">utilities.order_components</span></code></a>(A,&nbsp;C)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#utilities.extract_DF_F" title="utilities.extract_DF_F"><code class="xref py py-obj docutils literal"><span class="pre">utilities.extract_DF_F</span></code></a>(Y,&nbsp;A,&nbsp;C[,&nbsp;i])</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="preprocessing">
+<h2>Preprocessing<a class="headerlink" href="#preprocessing" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pre_processing.preprocess_data">
+<code class="descclassname">pre_processing.</code><code class="descname">preprocess_data</code><span class="sig-paren">(</span><em>Y, sn=None, noise_range=[0.25, 0.5], noise_method='logmexp', compute_g=False, p=2, g=None, lags=5, include_noise=False, pixels=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pre_processing.html#preprocess_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.preprocess_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="initialization">
+<h2>Initialization<a class="headerlink" href="#initialization" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="initialization.initialize_components">
+<code class="descclassname">initialization.</code><code class="descname">initialize_components</code><span class="sig-paren">(</span><em>Y, K=30, gSig=[5, 5], gSiz=None, ssub=1, tsub=1, nIter=5, use_median=False, kernel=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/initialization.html#initialize_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#initialization.initialize_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initalize components</p>
+<p>This method uses a greedy approach followed by hierarchical alternative least squares (HALS) NMF.
+Optional use of spatio-temporal downsampling to boost speed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>**Y</strong> &#8211; <p>np.ndarray**</p>
+<p>d1 x d2 x T movie, raw data.</p>
+</li>
+<li><strong>**K</strong> &#8211; <p>[optional] int**</p>
+<p>number of neurons to extract (default value: 30).</p>
+</li>
+<li><strong>**tau</strong> &#8211; <p>[optional] list,tuple**</p>
+<p>standard deviation of neuron size along x and y (default value: (5,5).</p>
+</li>
+<li><strong>**gSiz</strong> &#8211; <p>[optional] list,tuple**</p>
+<p>size of kernel (default 2*tau + 1).</p>
+</li>
+<li><strong>**nIter</strong> &#8211; <p>[optional] int**</p>
+<p>number of iterations for shape tuning (default 5).</p>
+</li>
+<li><strong>**ssub</strong> &#8211; <p>[optional] int**</p>
+<p>spatial downsampling factor (default 1).</p>
+</li>
+<li><strong>**tsub</strong> &#8211; <p>[optional] int**</p>
+<p>temporal downsampling factor (default 1).</p>
+</li>
+<li><strong>**use_median</strong> &#8211; <p>[optional] bool**</p>
+<p>add back fluorescence median values or not during refinement.</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>np.ndarray</p>
+<blockquote>
+<div><p>(d1*d2) x K , spatial filter of each neuron.</p>
+</div></blockquote>
+<p>Cin: np.ndarray</p>
+<blockquote>
+<div><p>T x K , calcium activity of each neuron.</p>
+</div></blockquote>
+<p>center: np.ndarray</p>
+<blockquote>
+<div><p>K x 2 , inferred center of each neuron.</p>
+</div></blockquote>
+<p>bin: np.ndarray</p>
+<blockquote>
+<div><p>(d1*d2) X nb, initialization of spatial background.</p>
+</div></blockquote>
+<p>fin: np.ndarray</p>
+<blockquote>
+<div><p>nb X T matrix, initalization of temporal background.</p>
+</div></blockquote>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Ain</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="spatial-components">
+<h2>Spatial Components<a class="headerlink" href="#spatial-components" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="spatial.update_spatial_components">
+<code class="descclassname">spatial.</code><code class="descname">update_spatial_components</code><span class="sig-paren">(</span><em>Y</em>, <em>C</em>, <em>f</em>, <em>A_in</em>, <em>d1=None</em>, <em>d2=None</em>, <em>min_size=3</em>, <em>max_size=8</em>, <em>dist=3</em>, <em>sn=None</em>, <em>n_processes=1</em>, <em>method='ellipse'</em>, <em>expandCore=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial.html#update_spatial_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#spatial.update_spatial_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>update spatial footprints and background
+through Basis Pursuit Denoising</p>
+<dl class="docutils">
+<dt>for each pixel i solve the problem</dt>
+<dd>[A(i,:),b(i)] = argmin sum(A(i,:))</dd>
+<dt>subject to</dt>
+<dd>|| Y(i,:) - A(i,:)*C + b(i)*f || &lt;= sn(i)*sqrt(T);</dd>
+</dl>
+<p>for each pixel the search is limited to a few spatial components</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>**Y</strong> &#8211; <p>np.ndarray (2D)**</p>
+<p>movie, raw data in 2D (pixels x time).</p>
+</li>
+<li><strong>**C</strong> &#8211; <p>np.ndarray**</p>
+<p>calcium activity of each neuron.</p>
+</li>
+<li><strong>**f</strong> &#8211; <p>np.ndarray**</p>
+<p>temporal profile  of background activity.</p>
+</li>
+<li><strong>**Ain</strong> &#8211; <p>np.ndarray**</p>
+<p>spatial profile of background activity.</p>
+</li>
+<li><strong>**d1</strong> &#8211; <p>[optional] int**</p>
+<p>x movie dimension</p>
+</li>
+<li><strong>**d2</strong> &#8211; <p>[optional] int**</p>
+<p>y movie dimension</p>
+</li>
+<li><strong>**min_size</strong> &#8211; [optional] int**</li>
+<li><strong>**max_size</strong> &#8211; [optional] int**</li>
+<li><strong>**dist</strong> &#8211; [optional] int**</li>
+<li><strong>**sn</strong> &#8211; [optional] float**</li>
+<li><strong>**n_processes</strong> &#8211; [optional] int**</li>
+<li><strong>**method</strong> &#8211; [optional] string**</li>
+<li><strong>**expandCore</strong> &#8211; [optional]  scipy.ndimage.morphology**</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>np.ndarray</p>
+<blockquote>
+<div><p>new estimate of spatial footprints</p>
+</div></blockquote>
+<p>b: np.ndarray</p>
+<blockquote>
+<div><p>new estimate of spatial background</p>
+</div></blockquote>
+<p>C: np.ndarray</p>
+<blockquote>
+<div><p>temporal components (updated only when spatial components are completely removed)</p>
+</div></blockquote>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">A</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="temporal-components">
+<h2>Temporal Components<a class="headerlink" href="#temporal-components" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="temporal.update_temporal_components">
+<code class="descclassname">temporal.</code><code class="descname">update_temporal_components</code><span class="sig-paren">(</span><em>Y</em>, <em>A</em>, <em>b</em>, <em>Cin</em>, <em>fin</em>, <em>ITER=1</em>, <em>method='constrained_foopsi'</em>, <em>deconv_method='cvx'</em>, <em>g='None'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/temporal.html#update_temporal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#temporal.update_temporal_components" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="merge-components">
+<h2>Merge components<a class="headerlink" href="#merge-components" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="merging.mergeROIS">
+<code class="descclassname">merging.</code><code class="descname">mergeROIS</code><span class="sig-paren">(</span><em>Y_res, A, b, C, f, S, d1, d2, P_, thr=0.8, mx=50, sn=None, deconv_method='spgl1', min_size=3, max_size=8, dist=3, method_exp='ellipse', expandCore=array([[0, 0, 1, 0, 0],        [0, 1, 1, 1, 0],        [1, 1, 1, 1, 1],        [0, 1, 1, 1, 0],        [0, 0, 1, 0, 0]])</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merging.html#mergeROIS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#merging.mergeROIS" title="Permalink to this definition">¶</a></dt>
+<dd><p>merging of spatially overlapping components that have highly correlated tmeporal activity
+% The correlation threshold for merging overlapping components is user specified in P.merge_thr (default value 0.85)
+% Inputs:
+% Y_res:        residual movie after subtracting all found components
+% A:            matrix of spatial components
+% b:            spatial background
+% C:            matrix of temporal components
+% f:            temporal background
+% P:            parameter struct
+% S:            matrix of deconvolved activity (spikes)</p>
+<p>% Outputs:
+% A:            matrix of new spatial components
+% C:            matrix of new temporal components
+% nr:           new number of components
+% merged_ROIs:  list of old components that were merged
+% S:            merged spikes</p>
+<p>% Written by:
+% Andrea Giovannucci from implementation of Eftychios A. Pnevmatikakis, Simons Foundation, 2015</p>
+</dd></dl>
+
+</div>
+<div class="section" id="utilities">
+<h2>Utilities<a class="headerlink" href="#utilities" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="utilities.local_correlations">
+<code class="descclassname">utilities.</code><code class="descname">local_correlations</code><span class="sig-paren">(</span><em>Y</em>, <em>eight_neighbours=False</em>, <em>swap_dim=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities.html#local_correlations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utilities.local_correlations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utilities.plot_contours">
+<code class="descclassname">utilities.</code><code class="descname">plot_contours</code><span class="sig-paren">(</span><em>A</em>, <em>Cn</em>, <em>thr=0.995</em>, <em>display_numbers=True</em>, <em>max_number=None</em>, <em>cmap=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities.html#plot_contours"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utilities.plot_contours" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utilities.view_patches">
+<code class="descclassname">utilities.</code><code class="descname">view_patches</code><span class="sig-paren">(</span><em>Yr</em>, <em>A</em>, <em>C</em>, <em>b</em>, <em>f</em>, <em>d1</em>, <em>d2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities.html#view_patches"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utilities.view_patches" title="Permalink to this definition">¶</a></dt>
+<dd><p>view spatial and temporal components</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utilities.order_components">
+<code class="descclassname">utilities.</code><code class="descname">order_components</code><span class="sig-paren">(</span><em>A</em>, <em>C</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities.html#order_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utilities.order_components" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utilities.extract_DF_F">
+<code class="descclassname">utilities.</code><code class="descname">extract_DF_F</code><span class="sig-paren">(</span><em>Y</em>, <em>A</em>, <em>C</em>, <em>i=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities.html#extract_DF_F"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utilities.extract_DF_F" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Core Functions</a><ul>
+<li><a class="reference internal" href="#preprocessing">Preprocessing</a></li>
+<li><a class="reference internal" href="#initialization">Initialization</a></li>
+<li><a class="reference internal" href="#spatial-components">Spatial Components</a></li>
+<li><a class="reference internal" href="#temporal-components">Temporal Components</a></li>
+<li><a class="reference internal" href="#merge-components">Merge components</a></li>
+<li><a class="reference internal" href="#utilities">Utilities</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter"><strong>Ca source separation</strong>  documentation</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/core_functions.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="index.html" title="Ca source separation documentation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Ca source separation 0.0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, AG and EP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

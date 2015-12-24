@@ -1,0 +1,218 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>temporal &mdash; Ca source separation 0.0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Ca source separation 0.0.2 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Ca source separation 0.0.2 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for temporal</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Fri Sep  4 10:11:26 2015</span>
+
+<span class="sd">@author: agiovann</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">spdiags</span><span class="p">,</span><span class="n">coo_matrix</span><span class="p">,</span><span class="n">csgraph</span>
+<span class="kn">import</span> <span class="nn">scipy</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">cPickle</span> <span class="kn">as</span> <span class="nn">pickle</span>
+<span class="kn">from</span> <span class="nn">deconvolution</span> <span class="kn">import</span> <span class="n">constrained_foopsi</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">linalg</span>
+<span class="kn">from</span> <span class="nn">spatial</span> <span class="kn">import</span> <span class="n">update_spatial_components</span>
+<span class="c">#%%</span>
+<span class="k">def</span> <span class="nf">make_G_matrix</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="n">g</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; </span>
+<span class="sd">    create matrix of autoregression</span>
+<span class="sd">    &#39;&#39;&#39;</span>    
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>    
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">g</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">g</span><span class="o">=</span><span class="mi">0</span>
+    
+<span class="c">#        gs=np.matrix(np.hstack((-np.flipud(g[:]).T,1)))</span>
+        <span class="n">gs</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="p">(</span><span class="n">g</span><span class="p">[:])</span><span class="o">.</span><span class="n">T</span><span class="p">)))</span>
+        <span class="n">ones_</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">T</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">spdiags</span><span class="p">((</span><span class="n">ones_</span><span class="o">*</span><span class="n">gs</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span><span class="n">T</span><span class="p">,</span><span class="n">T</span><span class="p">)</span>    
+        
+        <span class="k">return</span> <span class="n">G</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;g must be an array&#39;</span><span class="p">)</span>
+<span class="c">#%%</span>
+<div class="viewcode-block" id="update_temporal_components"><a class="viewcode-back" href="../core_functions.html#temporal.update_temporal_components">[docs]</a><span class="k">def</span> <span class="nf">update_temporal_components</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">Cin</span><span class="p">,</span><span class="n">fin</span><span class="p">,</span><span class="n">ITER</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s">&#39;constrained_foopsi&#39;</span><span class="p">,</span><span class="n">deconv_method</span> <span class="o">=</span> <span class="s">&#39;cvx&#39;</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="s">&#39;None&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="c">#                               b=None, </span>
+<span class="c">#                               c1=None,</span>
+<span class="c">#                               g=None,</span>
+<span class="c">#                               sn=None, </span>
+<span class="c">#                               p=2, </span>
+<span class="c">#                               method=&#39;cvx&#39;, </span>
+<span class="c">#                               bas_nonneg=True, </span>
+<span class="c">#                               noise_range=[0.25, 0.5], </span>
+<span class="c">#                               noise_method=&#39;logmexp&#39;, </span>
+<span class="c">#                               lags=5, </span>
+<span class="c">#                               resparse=0, </span>
+<span class="c">#                               fudge_factor=1, </span>
+<span class="c">#                               verbosity=False):</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    update temporal components and background given spatial components</span>
+<span class="c">#    **kwargs: all parameters passed to constrained_foopsi</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+
+
+    <span class="n">d</span><span class="p">,</span><span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">Y</span><span class="p">);</span>
+    
+
+    <span class="n">nr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">A</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">A</span><span class="p">,</span><span class="n">coo_matrix</span><span class="p">(</span><span class="n">b</span><span class="p">)))</span>
+    <span class="n">Cin</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">Cin</span><span class="p">,</span><span class="n">fin</span><span class="p">));</span>
+    <span class="n">C</span> <span class="o">=</span> <span class="n">Cin</span><span class="p">;</span>
+    <span class="c">#%</span>
+    <span class="n">nA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">todense</span><span class="p">()),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)))</span>
+    
+    <span class="n">Y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+    <span class="n">C</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>
+    <span class="n">Cin</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">Cin</span><span class="p">)</span>
+    <span class="n">Sp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nr</span><span class="p">,</span><span class="n">T</span><span class="p">))</span>
+    <span class="n">YrA</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">T</span><span class="o">*</span><span class="n">A</span> <span class="o">-</span> <span class="n">Cin</span><span class="o">.</span><span class="n">T</span><span class="o">*</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">T</span><span class="o">*</span><span class="n">A</span><span class="p">);</span>
+
+
+    <span class="k">for</span> <span class="nb">iter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ITER</span><span class="p">):</span>
+        <span class="n">idxs</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="n">nr</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span>
+        <span class="n">P_</span><span class="o">=</span><span class="p">[];</span>
+    <span class="c">#    perm = randperm(nr+1)</span>
+        <span class="k">for</span> <span class="n">jj</span><span class="p">,</span><span class="n">ii</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">idxs</span><span class="p">):</span>            
+            <span class="c">#ii=jj</span>
+            <span class="c">#print ii,jj</span>
+            <span class="n">pars</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="c">#        ii = perm(jj);</span>
+            <span class="k">if</span> <span class="n">ii</span><span class="o">&lt;</span><span class="n">nr</span><span class="p">:</span>                
+                <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;constrained_foopsi&#39;</span><span class="p">:</span>
+                        <span class="c">#print YrA.shape </span>
+                        <span class="c">#print YrA.shape</span>
+                        <span class="n">YrA</span><span class="p">[:,</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">YrA</span><span class="p">[:,</span><span class="n">ii</span><span class="p">]</span> <span class="o">+</span> <span class="n">nA</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span><span class="o">*</span><span class="n">Cin</span><span class="p">[</span><span class="n">ii</span><span class="p">,:]</span><span class="o">.</span><span class="n">T</span>                  
+                        <span class="n">cc</span><span class="p">,</span><span class="n">cb</span><span class="p">,</span><span class="n">c1</span><span class="p">,</span><span class="n">gn</span><span class="p">,</span><span class="n">sn</span><span class="p">,</span><span class="n">sp</span> <span class="o">=</span> <span class="n">constrained_foopsi</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">YrA</span><span class="p">[:,</span><span class="n">ii</span><span class="p">]</span><span class="o">/</span><span class="n">nA</span><span class="p">[</span><span class="n">ii</span><span class="p">])),</span> <span class="n">method</span> <span class="o">=</span> <span class="n">deconv_method</span><span class="p">,</span> <span class="o">**</span><span class="n">pars</span><span class="p">)</span>
+                        <span class="c">#print pars</span>
+                        <span class="n">pars</span><span class="p">[</span><span class="s">&#39;gn&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gn</span>
+                        
+                        <span class="n">gd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">roots</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="n">gn</span><span class="o">.</span><span class="n">T</span><span class="p">))));</span>  <span class="c"># decay time constant for initial concentration</span>
+                        <span class="n">gd_vec</span> <span class="o">=</span> <span class="n">gd</span><span class="o">**</span><span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+                        
+                        <span class="n">C</span><span class="p">[</span><span class="n">ii</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">cc</span><span class="p">[:]</span><span class="o">.</span><span class="n">T</span> <span class="o">+</span> <span class="n">cb</span> <span class="o">+</span> <span class="n">c1</span><span class="o">*</span><span class="n">gd_vec</span>
+                        <span class="n">Sp</span><span class="p">[</span><span class="n">ii</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[:</span><span class="n">T</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
+                        <span class="n">YrA</span><span class="p">[:,</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">YrA</span><span class="p">[:,</span><span class="n">ii</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">nA</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span><span class="o">*</span><span class="n">C</span><span class="p">[</span><span class="n">ii</span><span class="p">,:])</span><span class="o">.</span><span class="n">T</span>
+                        <span class="n">pars</span><span class="p">[</span><span class="s">&#39;b&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cb</span>
+                        <span class="n">pars</span><span class="p">[</span><span class="s">&#39;c1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">c1</span>           
+                        <span class="n">pars</span><span class="p">[</span><span class="s">&#39;neuron_sn&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sn</span>
+                        <span class="n">pars</span><span class="p">[</span><span class="s">&#39;neuron_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ii</span>
+                        <span class="n">P_</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;undefined  method&#39;</span><span class="p">)</span>                        
+                    
+                
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">YrA</span><span class="p">[:,</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">YrA</span><span class="p">[:,</span><span class="n">ii</span><span class="p">]</span> <span class="o">+</span> <span class="n">nA</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span><span class="o">*</span><span class="n">Cin</span><span class="p">[</span><span class="n">ii</span><span class="p">,:]</span><span class="o">.</span><span class="n">T</span>
+                <span class="n">cc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">YrA</span><span class="p">[:,</span><span class="n">ii</span><span class="p">]</span><span class="o">/</span><span class="n">nA</span><span class="p">[</span><span class="n">ii</span><span class="p">],</span><span class="mi">0</span><span class="p">)</span>
+                <span class="c">#C[ii,:] = full(cc&#39;);</span>
+                <span class="n">YrA</span><span class="p">[:,</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">YrA</span><span class="p">[:,</span><span class="n">ii</span><span class="p">]</span> <span class="o">-</span> <span class="n">nA</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span><span class="o">*</span><span class="n">C</span><span class="p">[</span><span class="n">ii</span><span class="p">,:]</span><span class="o">.</span><span class="n">T</span>
+            
+            <span class="k">if</span> <span class="p">(</span><span class="n">jj</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">10</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">print</span> <span class="nb">str</span><span class="p">(</span><span class="n">jj</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39; out of total &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">nr</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39; temporal components updated </span><span class="se">\n</span><span class="s">&#39;</span>
+    
+    
+        <span class="c">#%disp(norm(Fin(1:nr,:) - F,&#39;fro&#39;)/norm(F,&#39;fro&#39;));</span>
+        <span class="k">if</span> <span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">Cin</span> <span class="o">-</span> <span class="n">C</span><span class="p">,</span><span class="s">&#39;fro&#39;</span><span class="p">)</span><span class="o">/</span><span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="s">&#39;fro&#39;</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">1e-3</span><span class="p">:</span>
+            <span class="c"># stop if the overall temporal component does not change by much</span>
+            <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">Cin</span> <span class="o">=</span> <span class="n">C</span>
+        
+    
+    
+    <span class="n">Y_res</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">-</span> <span class="n">A</span><span class="o">*</span><span class="n">C</span>
+    
+    <span class="n">f</span> <span class="o">=</span> <span class="n">C</span><span class="p">[</span><span class="n">nr</span><span class="p">:,:]</span>
+    <span class="n">C</span> <span class="o">=</span> <span class="n">C</span><span class="p">[:</span><span class="n">nr</span><span class="p">,:]</span>
+        
+    <span class="n">P_</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">P_</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">k</span><span class="p">[</span><span class="s">&#39;neuron_id&#39;</span><span class="p">])</span> 
+    
+    <span class="k">return</span> <span class="n">C</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">Y_res</span><span class="p">,</span><span class="n">P_</span><span class="p">,</span><span class="n">Sp</span>
+
+<span class="c">#%%</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Ca source separation 0.0.2 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, AG and EP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>
