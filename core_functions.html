@@ -94,7 +94,7 @@
 <h2>Preprocessing<a class="headerlink" href="#preprocessing" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="pre_processing.preprocess_data">
-<code class="descclassname">pre_processing.</code><code class="descname">preprocess_data</code><span class="sig-paren">(</span><em>Y, sn=None, noise_range=[0.25, 0.5], noise_method='logmexp', compute_g=False, p=2, g=None, lags=5, include_noise=False, pixels=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pre_processing.html#preprocess_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pre_processing.preprocess_data" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pre_processing.</code><code class="descname">preprocess_data</code><span class="sig-paren">(</span><em>Y, sn=None, noise_range=[0.25, 0.5], noise_method='logmexp', compute_g=False, p=2, g=None, lags=5, include_noise=False, pixels=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pre_processing.preprocess_data" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>
@@ -102,7 +102,7 @@
 <h2>Initialization<a class="headerlink" href="#initialization" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="initialization.initialize_components">
-<code class="descclassname">initialization.</code><code class="descname">initialize_components</code><span class="sig-paren">(</span><em>Y, K=30, gSig=[5, 5], gSiz=None, ssub=1, tsub=1, nIter=5, use_median=False, kernel=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/initialization.html#initialize_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#initialization.initialize_components" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">initialization.</code><code class="descname">initialize_components</code><span class="sig-paren">(</span><em>Y, K=30, gSig=[5, 5], gSiz=None, ssub=1, tsub=1, nIter=5, use_median=False, kernel=None</em><span class="sig-paren">)</span><a class="headerlink" href="#initialization.initialize_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initalize components</p>
 <p>This method uses a greedy approach followed by hierarchical alternative least squares (HALS) NMF.
 Optional use of spatio-temporal downsampling to boost speed.</p>
@@ -110,35 +110,41 @@ Optional use of spatio-temporal downsampling to boost speed.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>**Y</strong> &#8211; <p>np.ndarray**</p>
-<p>d1 x d2 x T movie, raw data.</p>
-</li>
-<li><strong>**K</strong> &#8211; <p>[optional] int**</p>
-<p>number of neurons to extract (default value: 30).</p>
-</li>
-<li><strong>**tau</strong> &#8211; <p>[optional] list,tuple**</p>
-<p>standard deviation of neuron size along x and y (default value: (5,5).</p>
-</li>
-<li><strong>**gSiz</strong> &#8211; <p>[optional] list,tuple**</p>
-<p>size of kernel (default 2*tau + 1).</p>
-</li>
-<li><strong>**nIter</strong> &#8211; <p>[optional] int**</p>
-<p>number of iterations for shape tuning (default 5).</p>
-</li>
-<li><strong>**ssub</strong> &#8211; <p>[optional] int**</p>
-<p>spatial downsampling factor (default 1).</p>
-</li>
-<li><strong>**tsub</strong> &#8211; <p>[optional] int**</p>
-<p>temporal downsampling factor (default 1).</p>
-</li>
-<li><strong>**use_median</strong> &#8211; <p>[optional] bool**</p>
-<p>add back fluorescence median values or not during refinement.</p>
-</li>
-</ul>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Y: np.ndarray</strong></p>
+<blockquote>
+<div><p>d1 x d2 x T movie, raw data.</p>
+</div></blockquote>
+<p><strong>K: [optional] int</strong></p>
+<blockquote>
+<div><p>number of neurons to extract (default value: 30).</p>
+</div></blockquote>
+<p><strong>tau: [optional] list,tuple</strong></p>
+<blockquote>
+<div><p>standard deviation of neuron size along x and y (default value: (5,5).</p>
+</div></blockquote>
+<p><strong>gSiz: [optional] list,tuple</strong></p>
+<blockquote>
+<div><p>size of kernel (default 2*tau + 1).</p>
+</div></blockquote>
+<p><strong>nIter: [optional] int</strong></p>
+<blockquote>
+<div><p>number of iterations for shape tuning (default 5).</p>
+</div></blockquote>
+<p><strong>ssub: [optional] int</strong></p>
+<blockquote>
+<div><p>spatial downsampling factor (default 1).</p>
+</div></blockquote>
+<p><strong>tsub: [optional] int</strong></p>
+<blockquote>
+<div><p>temporal downsampling factor (default 1).</p>
+</div></blockquote>
+<p><strong>use_median: [optional] bool</strong></p>
+<blockquote>
+<div><p>add back fluorescence median values or not during refinement.</p>
+</div></blockquote>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>np.ndarray</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Ain: np.ndarray</p>
 <blockquote>
 <div><p>(d1*d2) x K , spatial filter of each neuron.</p>
 </div></blockquote>
@@ -155,13 +161,9 @@ Optional use of spatio-temporal downsampling to boost speed.</p>
 <div><p>(d1*d2) X nb, initialization of spatial background.</p>
 </div></blockquote>
 <p>fin: np.ndarray</p>
-<blockquote>
+<blockquote class="last">
 <div><p>nb X T matrix, initalization of temporal background.</p>
 </div></blockquote>
-</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Ain</p>
 </td>
 </tr>
 </tbody>
@@ -173,13 +175,13 @@ Optional use of spatio-temporal downsampling to boost speed.</p>
 <h2>Spatial Components<a class="headerlink" href="#spatial-components" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="spatial.update_spatial_components">
-<code class="descclassname">spatial.</code><code class="descname">update_spatial_components</code><span class="sig-paren">(</span><em>Y</em>, <em>C</em>, <em>f</em>, <em>A_in</em>, <em>d1=None</em>, <em>d2=None</em>, <em>min_size=3</em>, <em>max_size=8</em>, <em>dist=3</em>, <em>sn=None</em>, <em>n_processes=1</em>, <em>method='ellipse'</em>, <em>expandCore=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spatial.html#update_spatial_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#spatial.update_spatial_components" title="Permalink to this definition">¶</a></dt>
-<dd><p>update spatial footprints and background
+<code class="descclassname">spatial.</code><code class="descname">update_spatial_components</code><span class="sig-paren">(</span><em>Y</em>, <em>C</em>, <em>f</em>, <em>A_in</em>, <em>d1=None</em>, <em>d2=None</em>, <em>min_size=3</em>, <em>max_size=8</em>, <em>dist=3</em>, <em>sn=None</em>, <em>n_processes=1</em>, <em>method='ellipse'</em>, <em>expandCore=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spatial.update_spatial_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>update spatial footprints and background     
 through Basis Pursuit Denoising</p>
 <dl class="docutils">
-<dt>for each pixel i solve the problem</dt>
+<dt>for each pixel i solve the problem </dt>
 <dd>[A(i,:),b(i)] = argmin sum(A(i,:))</dd>
-<dt>subject to</dt>
+<dt>subject to </dt>
 <dd>|| Y(i,:) - A(i,:)*C + b(i)*f || &lt;= sn(i)*sqrt(T);</dd>
 </dl>
 <p>for each pixel the search is limited to a few spatial components</p>
@@ -187,36 +189,40 @@ through Basis Pursuit Denoising</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>**Y</strong> &#8211; <p>np.ndarray (2D)**</p>
-<p>movie, raw data in 2D (pixels x time).</p>
-</li>
-<li><strong>**C</strong> &#8211; <p>np.ndarray**</p>
-<p>calcium activity of each neuron.</p>
-</li>
-<li><strong>**f</strong> &#8211; <p>np.ndarray**</p>
-<p>temporal profile  of background activity.</p>
-</li>
-<li><strong>**Ain</strong> &#8211; <p>np.ndarray**</p>
-<p>spatial profile of background activity.</p>
-</li>
-<li><strong>**d1</strong> &#8211; <p>[optional] int**</p>
-<p>x movie dimension</p>
-</li>
-<li><strong>**d2</strong> &#8211; <p>[optional] int**</p>
-<p>y movie dimension</p>
-</li>
-<li><strong>**min_size</strong> &#8211; [optional] int**</li>
-<li><strong>**max_size</strong> &#8211; [optional] int**</li>
-<li><strong>**dist</strong> &#8211; [optional] int**</li>
-<li><strong>**sn</strong> &#8211; [optional] float**</li>
-<li><strong>**n_processes</strong> &#8211; [optional] int**</li>
-<li><strong>**method</strong> &#8211; [optional] string**</li>
-<li><strong>**expandCore</strong> &#8211; [optional]  scipy.ndimage.morphology**</li>
-</ul>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Y: np.ndarray (2D)</strong></p>
+<blockquote>
+<div><p>movie, raw data in 2D (pixels x time).</p>
+</div></blockquote>
+<p><strong>C: np.ndarray</strong></p>
+<blockquote>
+<div><p>calcium activity of each neuron.</p>
+</div></blockquote>
+<p><strong>f: np.ndarray</strong></p>
+<blockquote>
+<div><p>temporal profile  of background activity.</p>
+</div></blockquote>
+<p><strong>Ain: np.ndarray</strong></p>
+<blockquote>
+<div><p>spatial profile of background activity.</p>
+</div></blockquote>
+<p><strong>d1: [optional] int</strong></p>
+<blockquote>
+<div><p>x movie dimension</p>
+</div></blockquote>
+<p><strong>d2: [optional] int</strong></p>
+<blockquote>
+<div><p>y movie dimension</p>
+</div></blockquote>
+<p><strong>min_size: [optional] int</strong></p>
+<p><strong>max_size: [optional] int</strong></p>
+<p><strong>dist: [optional] int</strong></p>
+<p><strong>sn: [optional] float</strong></p>
+<p><strong>n_processes: [optional] int</strong></p>
+<p><strong>method: [optional] string</strong></p>
+<p><strong>expandCore: [optional]  scipy.ndimage.morphology</strong></p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>np.ndarray</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A: np.ndarray</p>
 <blockquote>
 <div><p>new estimate of spatial footprints</p>
 </div></blockquote>
@@ -225,13 +231,9 @@ through Basis Pursuit Denoising</p>
 <div><p>new estimate of spatial background</p>
 </div></blockquote>
 <p>C: np.ndarray</p>
-<blockquote>
+<blockquote class="last">
 <div><p>temporal components (updated only when spatial components are completely removed)</p>
 </div></blockquote>
-</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">A</p>
 </td>
 </tr>
 </tbody>
@@ -243,7 +245,7 @@ through Basis Pursuit Denoising</p>
 <h2>Temporal Components<a class="headerlink" href="#temporal-components" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="temporal.update_temporal_components">
-<code class="descclassname">temporal.</code><code class="descname">update_temporal_components</code><span class="sig-paren">(</span><em>Y</em>, <em>A</em>, <em>b</em>, <em>Cin</em>, <em>fin</em>, <em>ITER=1</em>, <em>method='constrained_foopsi'</em>, <em>deconv_method='cvx'</em>, <em>g='None'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/temporal.html#update_temporal_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#temporal.update_temporal_components" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">temporal.</code><code class="descname">update_temporal_components</code><span class="sig-paren">(</span><em>Y</em>, <em>A</em>, <em>b</em>, <em>Cin</em>, <em>fin</em>, <em>ITER=1</em>, <em>method='constrained_foopsi'</em>, <em>deconv_method='cvx'</em>, <em>g='None'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#temporal.update_temporal_components" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>
@@ -251,7 +253,7 @@ through Basis Pursuit Denoising</p>
 <h2>Merge components<a class="headerlink" href="#merge-components" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="merging.mergeROIS">
-<code class="descclassname">merging.</code><code class="descname">mergeROIS</code><span class="sig-paren">(</span><em>Y_res, A, b, C, f, S, d1, d2, P_, thr=0.8, mx=50, sn=None, deconv_method='spgl1', min_size=3, max_size=8, dist=3, method_exp='ellipse', expandCore=array([[0, 0, 1, 0, 0],        [0, 1, 1, 1, 0],        [1, 1, 1, 1, 1],        [0, 1, 1, 1, 0],        [0, 0, 1, 0, 0]])</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merging.html#mergeROIS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#merging.mergeROIS" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">merging.</code><code class="descname">mergeROIS</code><span class="sig-paren">(</span><em>Y_res, A, b, C, f, S, d1, d2, P_, thr=0.8, mx=50, sn=None, deconv_method='spgl1', min_size=3, max_size=8, dist=3, method_exp='ellipse', expandCore=array([[0, 0, 1, 0, 0],        [0, 1, 1, 1, 0],        [1, 1, 1, 1, 1],        [0, 1, 1, 1, 0],        [0, 0, 1, 0, 0]])</em><span class="sig-paren">)</span><a class="headerlink" href="#merging.mergeROIS" title="Permalink to this definition">¶</a></dt>
 <dd><p>merging of spatially overlapping components that have highly correlated tmeporal activity
 % The correlation threshold for merging overlapping components is user specified in P.merge_thr (default value 0.85)
 % Inputs:
@@ -277,28 +279,28 @@ through Basis Pursuit Denoising</p>
 <h2>Utilities<a class="headerlink" href="#utilities" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="utilities.local_correlations">
-<code class="descclassname">utilities.</code><code class="descname">local_correlations</code><span class="sig-paren">(</span><em>Y</em>, <em>eight_neighbours=False</em>, <em>swap_dim=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities.html#local_correlations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utilities.local_correlations" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">utilities.</code><code class="descname">local_correlations</code><span class="sig-paren">(</span><em>Y</em>, <em>eight_neighbours=False</em>, <em>swap_dim=True</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.local_correlations" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="utilities.plot_contours">
-<code class="descclassname">utilities.</code><code class="descname">plot_contours</code><span class="sig-paren">(</span><em>A</em>, <em>Cn</em>, <em>thr=0.995</em>, <em>display_numbers=True</em>, <em>max_number=None</em>, <em>cmap=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities.html#plot_contours"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utilities.plot_contours" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">utilities.</code><code class="descname">plot_contours</code><span class="sig-paren">(</span><em>A</em>, <em>Cn</em>, <em>thr=0.995</em>, <em>display_numbers=True</em>, <em>max_number=None</em>, <em>cmap=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.plot_contours" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="utilities.view_patches">
-<code class="descclassname">utilities.</code><code class="descname">view_patches</code><span class="sig-paren">(</span><em>Yr</em>, <em>A</em>, <em>C</em>, <em>b</em>, <em>f</em>, <em>d1</em>, <em>d2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities.html#view_patches"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utilities.view_patches" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">utilities.</code><code class="descname">view_patches</code><span class="sig-paren">(</span><em>Yr</em>, <em>A</em>, <em>C</em>, <em>b</em>, <em>f</em>, <em>d1</em>, <em>d2</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.view_patches" title="Permalink to this definition">¶</a></dt>
 <dd><p>view spatial and temporal components</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="utilities.order_components">
-<code class="descclassname">utilities.</code><code class="descname">order_components</code><span class="sig-paren">(</span><em>A</em>, <em>C</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities.html#order_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utilities.order_components" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">utilities.</code><code class="descname">order_components</code><span class="sig-paren">(</span><em>A</em>, <em>C</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.order_components" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="utilities.extract_DF_F">
-<code class="descclassname">utilities.</code><code class="descname">extract_DF_F</code><span class="sig-paren">(</span><em>Y</em>, <em>A</em>, <em>C</em>, <em>i=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities.html#extract_DF_F"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utilities.extract_DF_F" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">utilities.</code><code class="descname">extract_DF_F</code><span class="sig-paren">(</span><em>Y</em>, <em>A</em>, <em>C</em>, <em>i=None</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.extract_DF_F" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>
