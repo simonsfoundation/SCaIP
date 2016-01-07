@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installation &mdash; Constrained NMF 0.0.2 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Constrained NMF 0.0.2 documentation" href="index.html" />
+    <link rel="next" title="Tutorial" href="Tutorial.html" />
+    <link rel="prev" title="Overview" href="Overview.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="Tutorial.html" title="Tutorial"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Overview.html" title="Overview"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Constrained NMF 0.0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installation">
+<h1><strong>Installation</strong><a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installation-on-mac-os">
+<h2>Installation on MAC OS<a class="headerlink" href="#installation-on-mac-os" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p class="first">Download and install Anaconda &lt;<a class="reference external" href="http://docs.continuum.io/anaconda/install">http://docs.continuum.io/anaconda/install</a>&gt;</p>
+</li>
+<li><p class="first">Clone these two repositories <em>in the same folder</em>:</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li><cite>git clone https://github.com/agiovann/Constrained_NMF.git</cite></li>
+<li><cite>git clone https://github.com/epnev/SPGL1_python_port.git</cite></li>
+</ol>
+</div></blockquote>
+</li>
+<li><ol class="first arabic simple">
+<li>Go into the cloned folder and type <cite>conda create &#8211;name CNMF &#8211;file requirements.txt</cite></li>
+<li>type <cite>source activate CNMF</cite> (this activates the environment, remember to do this every time you want to use the software)</li>
+<li>type <cite>pip install tifffile picos</cite></li>
+<li>type <cite>conda install joblib</cite></li>
+</ol>
+</li>
+</ol>
+<ol class="upperalpha" start="2">
+<li><p class="first">Use this in case 3. does not work. Type the following</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li><cite>git clone https://github.com/agiovann/Constrained_NMF.git</cite></li>
+<li><cite>git clone https://github.com/epnev/SPGL1_python_port.git</cite></li>
+<li><cite>conda create -n CNMF &#8211;no-deps ipython</cite></li>
+<li><cite>source activate CNMF</cite></li>
+<li><cite>conda install spyder numpy scipy ipyparallel matplotlib bokeh jupyter scikit-image scikit-learn joblib cvxopt</cite></li>
+<li><cite>pip install picos</cite></li>
+<li><cite>pip install tifffile</cite></li>
+</ol>
+</div></blockquote>
+</li>
+</ol>
+</div>
+<div class="section" id="test-the-system">
+<h2>Test the system<a class="headerlink" href="#test-the-system" title="Permalink to this headline">¶</a></h2>
+<ol class="upperalpha">
+<li><p class="first">Using the Spyder IDE.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Open the file demo.py</li>
+<li>Run the cells one by one inspecting the output</li>
+</ol>
+</div></blockquote>
+</li>
+<li><p class="first">Using notebook.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>type <cite>ipython notebook</cite></li>
+<li>open the notebook called demoCNMF.ipynb and run cell by cell inspecting the result</li>
+</ol>
+</div></blockquote>
+</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><strong>Installation</strong></a><ul>
+<li><a class="reference internal" href="#installation-on-mac-os">Installation on MAC OS</a></li>
+<li><a class="reference internal" href="#test-the-system">Test the system</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Overview.html"
+                        title="previous chapter">Overview</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Tutorial.html"
+                        title="next chapter">Tutorial</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Installation.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="Tutorial.html" title="Tutorial"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Overview.html" title="Overview"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Constrained NMF 0.0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, Eftychios Pnevmatikakis and Andrea Giovannucci.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>
