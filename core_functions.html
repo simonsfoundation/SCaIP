@@ -64,13 +64,13 @@
 <tr class="row-even"><td><a class="reference internal" href="#initialization.initialize_components" title="initialization.initialize_components"><code class="xref py py-obj docutils literal"><span class="pre">initialization.initialize_components</span></code></a>(Y[,&nbsp;K,&nbsp;...])</td>
 <td>Initalize components</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="#spatial.update_spatial_components_parallel" title="spatial.update_spatial_components_parallel"><code class="xref py py-obj docutils literal"><span class="pre">spatial.update_spatial_components_parallel</span></code></a>(Y,&nbsp;...)</td>
-<td>update spatial footprints and background</td>
+<tr class="row-odd"><td><a class="reference internal" href="#spatial.update_spatial_components" title="spatial.update_spatial_components"><code class="xref py py-obj docutils literal"><span class="pre">spatial.update_spatial_components</span></code></a>(Y,&nbsp;C,&nbsp;f,&nbsp;A_in)</td>
+<td>update spatial footprints and background through Basis Pursuit Denoising</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="#temporal.update_temporal_components_parallel" title="temporal.update_temporal_components_parallel"><code class="xref py py-obj docutils literal"><span class="pre">temporal.update_temporal_components_parallel</span></code></a>(Y,&nbsp;...)</td>
+<tr class="row-even"><td><a class="reference internal" href="#temporal.update_temporal_components" title="temporal.update_temporal_components"><code class="xref py py-obj docutils literal"><span class="pre">temporal.update_temporal_components</span></code></a>(Y,&nbsp;A,&nbsp;b,&nbsp;...)</td>
 <td>Update temporal components and background given spatial components using a block coordinate descent approach.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="#merging.mergeROIS_parallel" title="merging.mergeROIS_parallel"><code class="xref py py-obj docutils literal"><span class="pre">merging.mergeROIS_parallel</span></code></a>(Y_res,&nbsp;A,&nbsp;b,&nbsp;C,&nbsp;...)</td>
+<tr class="row-odd"><td><a class="reference internal" href="#merging.merge_components" title="merging.merge_components"><code class="xref py py-obj docutils literal"><span class="pre">merging.merge_components</span></code></a>(Y,&nbsp;A,&nbsp;b,&nbsp;C,&nbsp;f,&nbsp;S,&nbsp;...)</td>
 <td>Merging of spatially overlapping components that have highly correlated temporal activity</td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#utilities.local_correlations" title="utilities.local_correlations"><code class="xref py py-obj docutils literal"><span class="pre">utilities.local_correlations</span></code></a>(Y[,&nbsp;...])</td>
@@ -94,7 +94,7 @@
 <h2>Preprocessing<a class="headerlink" href="#preprocessing" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="pre_processing.preprocess_data">
-<code class="descclassname">pre_processing.</code><code class="descname">preprocess_data</code><span class="sig-paren">(</span><em>Y, sn=None, n_processes=4, n_pixels_per_process=100, noise_range=[0.25, 0.5], noise_method='logmexp', compute_g=False, p=2, g=None, lags=5, include_noise=False, pixels=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pre_processing.preprocess_data" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pre_processing.</code><code class="descname">preprocess_data</code><span class="sig-paren">(</span><em>Y, sn=None, n_processes=4, backend='multithreading', n_pixels_per_process=100, noise_range=[0.25, 0.5], noise_method='logmexp', compute_g=False, p=2, g=None, lags=5, include_noise=False, pixels=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pre_processing.preprocess_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performs the pre-processing operations described above.</p>
 </dd></dl>
 
@@ -103,7 +103,7 @@
 <h2>Initialization<a class="headerlink" href="#initialization" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="initialization.initialize_components">
-<code class="descclassname">initialization.</code><code class="descname">initialize_components</code><span class="sig-paren">(</span><em>Y, K=30, gSig=[5, 5], gSiz=None, ssub=1, tsub=1, nIter=5, maxIter=5, use_median=False, kernel=None</em><span class="sig-paren">)</span><a class="headerlink" href="#initialization.initialize_components" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">initialization.</code><code class="descname">initialize_components</code><span class="sig-paren">(</span><em>Y, K=30, gSig=[5, 5], gSiz=None, ssub=1, tsub=1, nIter=5, maxIter=5, kernel=None, use_hals=True, Cn=None</em><span class="sig-paren">)</span><a class="headerlink" href="#initialization.initialize_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initalize components</p>
 <p>This method uses a greedy approach followed by hierarchical alternative least squares (HALS) NMF.
 Optional use of spatio-temporal downsampling to boost speed.</p>
@@ -143,13 +143,13 @@ Optional use of spatio-temporal downsampling to boost speed.</p>
 <blockquote>
 <div><p>temporal downsampling factor recommended for long datasets (default 1, no downsampling).</p>
 </div></blockquote>
-<p><strong>use_median: [optional] bool</strong></p>
-<blockquote>
-<div><p>add back fluorescence median values or not during refinement.</p>
-</div></blockquote>
 <p><strong>kernel: [optional] np.ndarray</strong></p>
 <blockquote>
 <div><p>User specified kernel for greedyROI (default None, greedy ROI searches for Gaussian shaped neurons)</p>
+</div></blockquote>
+<p><strong>use_hals: [bool]</strong></p>
+<blockquote>
+<div><p>Whether to refine components with the hals method</p>
 </div></blockquote>
 </td>
 </tr>
@@ -183,10 +183,9 @@ Optional use of spatio-temporal downsampling to boost speed.</p>
 <div class="section" id="spatial-components">
 <h2>Spatial Components<a class="headerlink" href="#spatial-components" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
-<dt id="spatial.update_spatial_components_parallel">
-<code class="descclassname">spatial.</code><code class="descname">update_spatial_components_parallel</code><span class="sig-paren">(</span><em>Y</em>, <em>C</em>, <em>f</em>, <em>A_in</em>, <em>sn=None</em>, <em>d1=None</em>, <em>d2=None</em>, <em>min_size=3</em>, <em>max_size=8</em>, <em>dist=3</em>, <em>method='ellipse'</em>, <em>expandCore=None</em>, <em>backend='single_thread'</em>, <em>n_processes=4</em>, <em>n_pixels_per_process=128</em>, <em>memory_efficient=False</em><span class="sig-paren">)</span><a class="headerlink" href="#spatial.update_spatial_components_parallel" title="Permalink to this definition">¶</a></dt>
-<dd><p>update spatial footprints and background     
-through Basis Pursuit Denoising</p>
+<dt id="spatial.update_spatial_components">
+<code class="descclassname">spatial.</code><code class="descname">update_spatial_components</code><span class="sig-paren">(</span><em>Y</em>, <em>C</em>, <em>f</em>, <em>A_in</em>, <em>sn=None</em>, <em>d1=None</em>, <em>d2=None</em>, <em>min_size=3</em>, <em>max_size=8</em>, <em>dist=3</em>, <em>method='ellipse'</em>, <em>expandCore=None</em>, <em>backend='single_thread'</em>, <em>n_processes=4</em>, <em>n_pixels_per_process=128</em>, <em>memory_efficient=False</em><span class="sig-paren">)</span><a class="headerlink" href="#spatial.update_spatial_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>update spatial footprints and background through Basis Pursuit Denoising</p>
 <dl class="docutils">
 <dt>for each pixel i solve the problem </dt>
 <dd>[A(i,:),b(i)] = argmin sum(A(i,:))</dd>
@@ -235,10 +234,9 @@ through Basis Pursuit Denoising</p>
 </div></blockquote>
 <p><strong>backend [optional] str</strong></p>
 <blockquote>
-<div><p>&#8216;multiprocessing&#8217;, &#8216;threading&#8217;, &#8216;ipyparallel&#8217;, &#8216;single_thread&#8217; 
-single_thread:no parallelization. It shoul dbe used in most cases.         
-multiprocessing or threading: use the corresponding python threading package. It has known issues on mac OS. Not to be used in most situations.
-ipyparallel: starts an ipython cluster and then send jobs to each of them</p>
+<div><p>&#8216;ipyparallel&#8217;, &#8216;single_thread&#8217; 
+single_thread:no parallelization. It can be used with small datasets.                 
+ipyparallel: uses ipython clusters and then send jobs to each of them</p>
 </div></blockquote>
 <p><strong>n_pixels_per_process: [optional] int</strong></p>
 <blockquote>
@@ -280,8 +278,8 @@ ipyparallel: starts an ipython cluster and then send jobs to each of them</p>
 <div class="section" id="temporal-components">
 <h2>Temporal Components<a class="headerlink" href="#temporal-components" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
-<dt id="temporal.update_temporal_components_parallel">
-<code class="descclassname">temporal.</code><code class="descname">update_temporal_components_parallel</code><span class="sig-paren">(</span><em>Y</em>, <em>A</em>, <em>b</em>, <em>Cin</em>, <em>fin</em>, <em>bl=None</em>, <em>c1=None</em>, <em>g=None</em>, <em>sn=None</em>, <em>ITER=2</em>, <em>method_foopsi='constrained_foopsi'</em>, <em>n_processes=1</em>, <em>backend='single_thread'</em>, <em>memory_efficient=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#temporal.update_temporal_components_parallel" title="Permalink to this definition">¶</a></dt>
+<dt id="temporal.update_temporal_components">
+<code class="descclassname">temporal.</code><code class="descname">update_temporal_components</code><span class="sig-paren">(</span><em>Y</em>, <em>A</em>, <em>b</em>, <em>Cin</em>, <em>fin</em>, <em>bl=None</em>, <em>c1=None</em>, <em>g=None</em>, <em>sn=None</em>, <em>ITER=2</em>, <em>method_foopsi='constrained_foopsi'</em>, <em>n_processes=1</em>, <em>backend='single_thread'</em>, <em>memory_efficient=False</em>, <em>debug=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#temporal.update_temporal_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update temporal components and background given spatial components using a block coordinate descent approach.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -359,23 +357,30 @@ ipcluster -n 6, where 6 is the number of processes).</p>
 </div></blockquote>
 <p><strong>method: [optional] string</strong></p>
 <blockquote>
-<div><p>solution method for basis projection pursuit cvx or spgl1 or debug for fast but possibly imprecise temporal components</p>
+<div><dl class="docutils">
+<dt>solution method for constrained foopsi. Choices are</dt>
+<dd><p class="first last">&#8216;cvx&#8217;:      using cvxopt and picos (slow especially without the MOSEK solver)
+&#8216;cvxpy&#8217;:    using cvxopt and cvxpy with the ECOS solver (faster, default)
+&#8216;spgl1&#8217;:    using the spgl1 package
+&#8216;debug&#8217;:    using spgl1 without spike non-negativity constraints (just for debugging purposes)</p>
+</dd>
+</dl>
+</div></blockquote>
+<p><strong>solvers: list string</strong></p>
+<blockquote>
+<div><p>primary and secondary (if problem unfeasible for approx solution) solvers to be used with cvxpy, default is [&#8216;ECOS&#8217;,&#8217;SCS&#8217;]</p>
 </div></blockquote>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">C:     np.matrix</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">C:   np.ndarray</p>
 <blockquote>
 <div><p>matrix of temporal components (K x T)</p>
 </div></blockquote>
-<p>f:     np.array</p>
+<p>f:   np.array</p>
 <blockquote>
 <div><p>vector of temporal background (length T)</p>
 </div></blockquote>
-<p>Y_res: np.ndarray</p>
-<blockquote>
-<div><p>matrix with current residual (d x T)</p>
-</div></blockquote>
-<p>S:     np.ndarray</p>
+<p>S:   np.ndarray</p>
 <blockquote>
 <div><p>matrix of merged deconvolved activity (spikes) (K x T)</p>
 </div></blockquote>
@@ -392,8 +397,13 @@ ipcluster -n 6, where 6 is the number of processes).</p>
 <div><p>same as input</p>
 </div></blockquote>
 <p>sn:  float</p>
-<blockquote class="last">
+<blockquote>
 <div><p>same as input</p>
+</div></blockquote>
+<p>YrA: np.ndarray</p>
+<blockquote class="last">
+<div><p>matrix of spatial component filtered raw data, after all contributions have been removed.            
+YrA corresponds to the residual trace for each component and is used for faster plotting (K x T)</p>
 </div></blockquote>
 </td>
 </tr>
@@ -405,8 +415,8 @@ ipcluster -n 6, where 6 is the number of processes).</p>
 <div class="section" id="merge-components">
 <h2>Merge components<a class="headerlink" href="#merge-components" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
-<dt id="merging.mergeROIS_parallel">
-<code class="descclassname">merging.</code><code class="descname">mergeROIS_parallel</code><span class="sig-paren">(</span><em>Y_res</em>, <em>A</em>, <em>b</em>, <em>C</em>, <em>f</em>, <em>S</em>, <em>sn_pix</em>, <em>temporal_params</em>, <em>spatial_params</em>, <em>thr=0.85</em>, <em>mx=50</em>, <em>bl=None</em>, <em>c1=None</em>, <em>sn=None</em>, <em>g=None</em><span class="sig-paren">)</span><a class="headerlink" href="#merging.mergeROIS_parallel" title="Permalink to this definition">¶</a></dt>
+<dt id="merging.merge_components">
+<code class="descclassname">merging.</code><code class="descname">merge_components</code><span class="sig-paren">(</span><em>Y</em>, <em>A</em>, <em>b</em>, <em>C</em>, <em>f</em>, <em>S</em>, <em>sn_pix</em>, <em>temporal_params</em>, <em>spatial_params</em>, <em>thr=0.85</em>, <em>fast_merge=True</em>, <em>mx=50</em>, <em>bl=None</em>, <em>c1=None</em>, <em>sn=None</em>, <em>g=None</em><span class="sig-paren">)</span><a class="headerlink" href="#merging.merge_components" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>Merging of spatially overlapping components that have highly correlated temporal activity</dt>
 <dd>The correlation threshold for merging overlapping components is user specified in thr</dd>
@@ -415,7 +425,7 @@ ipcluster -n 6, where 6 is the number of processes).</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Y_res: np.ndarray</strong></p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Y: np.ndarray</strong></p>
 <blockquote>
 <div><p>residual movie after subtracting all found components (Y_res = Y - A*C - b*f) (d x T)</p>
 </div></blockquote>
@@ -445,11 +455,11 @@ ipcluster -n 6, where 6 is the number of processes).</p>
 </div></blockquote>
 <p><strong>temporal_params: dictionary</strong></p>
 <blockquote>
-<div><p>all the parameters that can be passed to the update_temporal_components_parallel function</p>
+<div><p>all the parameters that can be passed to the update_temporal_components function</p>
 </div></blockquote>
 <p><strong>spatial_params: dictionary</strong></p>
 <blockquote>
-<div><p>all the parameters that can be passed to the update_spatial_components_parallel function</p>
+<div><p>all the parameters that can be passed to the update_spatial_components function</p>
 </div></blockquote>
 <p><strong>thr:   scalar between 0 and 1</strong></p>
 <blockquote>
@@ -528,7 +538,7 @@ ipcluster -n 6, where 6 is the number of processes).</p>
 <h2>Utilities<a class="headerlink" href="#utilities" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="utilities.local_correlations">
-<code class="descclassname">utilities.</code><code class="descname">local_correlations</code><span class="sig-paren">(</span><em>Y</em>, <em>eight_neighbours=False</em>, <em>swap_dim=True</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.local_correlations" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">utilities.</code><code class="descname">local_correlations</code><span class="sig-paren">(</span><em>Y</em>, <em>eight_neighbours=True</em>, <em>swap_dim=True</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.local_correlations" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the correlation image for the input dataset Y</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -558,7 +568,7 @@ and moves it in the front</p>
 
 <dl class="function">
 <dt id="utilities.plot_contours">
-<code class="descclassname">utilities.</code><code class="descname">plot_contours</code><span class="sig-paren">(</span><em>A</em>, <em>Cn</em>, <em>thr=0.995</em>, <em>display_numbers=True</em>, <em>max_number=None</em>, <em>cmap=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.plot_contours" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">utilities.</code><code class="descname">plot_contours</code><span class="sig-paren">(</span><em>A</em>, <em>Cn</em>, <em>thr=0.9</em>, <em>display_numbers=True</em>, <em>max_number=None</em>, <em>cmap=None</em>, <em>swap_dim=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.plot_contours" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots contour of spatial components against a background image and returns their coordinates</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -599,7 +609,7 @@ and moves it in the front</p>
 
 <dl class="function">
 <dt id="utilities.view_patches">
-<code class="descclassname">utilities.</code><code class="descname">view_patches</code><span class="sig-paren">(</span><em>Yr</em>, <em>A</em>, <em>C</em>, <em>b</em>, <em>f</em>, <em>d1</em>, <em>d2</em>, <em>secs=1</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.view_patches" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">utilities.</code><code class="descname">view_patches</code><span class="sig-paren">(</span><em>Yr</em>, <em>A</em>, <em>C</em>, <em>b</em>, <em>f</em>, <em>d1</em>, <em>d2</em>, <em>YrA=None</em>, <em>secs=1</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.view_patches" title="Permalink to this definition">¶</a></dt>
 <dd><p>view spatial and temporal components (secs=0 interactive)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -625,13 +635,22 @@ and moves it in the front</p>
 <blockquote>
 <div><p>temporal background (vector of length T)</p>
 </div></blockquote>
-<p><strong>d1,d2: np/ndarray</strong></p>
+<p><strong>d1,d2: np.ndarray</strong></p>
 <blockquote>
 <div><p>frame dimensions</p>
 </div></blockquote>
-<p><strong>secs: float</strong></p>
-<blockquote class="last">
+<p><strong>YrA:   np.ndarray</strong></p>
+<blockquote>
+<div><p>ROI filtered residual as it is given from update_temporal_components
+If not given, then it is computed (K x T)</p>
+</div></blockquote>
+<p><strong>secs:  float</strong></p>
+<blockquote>
 <div><p>number of seconds in between component scrolling. secs=0 means interactive (click to scroll)</p>
+</div></blockquote>
+<p><strong>imgs:  np.ndarray</strong></p>
+<blockquote class="last">
+<div><p>background image for contour plotting. Default is the image of all spatial components (d1 x d2)</p>
 </div></blockquote>
 </td>
 </tr>
@@ -655,15 +674,17 @@ and moves it in the front</p>
 <blockquote>
 <div><p>temporal components</p>
 </div></blockquote>
-<p><strong>A_or:  np.ndarray</strong></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A_or:  np.ndarray</p>
 <blockquote>
 <div><p>ordered spatial components</p>
 </div></blockquote>
-<p><strong>C_or:  np.ndarray</strong></p>
+<p>C_or:  np.ndarray</p>
 <blockquote>
 <div><p>ordered temporal components</p>
 </div></blockquote>
-<p><strong>srt:   np.ndarray</strong></p>
+<p>srt:   np.ndarray</p>
 <blockquote class="last">
 <div><p>sorting mapping</p>
 </div></blockquote>
@@ -778,7 +799,7 @@ and moves it in the front</p>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015, Eftychios Pnevmatikakis and Andrea Giovannucci.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
     </div>
   </body>
 </html>
