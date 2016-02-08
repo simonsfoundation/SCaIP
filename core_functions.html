@@ -24,7 +24,6 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Constrained NMF 0.0.4 documentation" href="index.html" />
-    <link rel="next" title="API Reference" href="API reference.html" />
     <link rel="prev" title="Overview" href="Overview.html" /> 
   </head>
   <body role="document">
@@ -34,9 +33,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="API reference.html" title="API Reference"
-             accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="Overview.html" title="Overview"
              accesskey="P">previous</a> |</li>
@@ -79,14 +75,14 @@
 <tr class="row-odd"><td><a class="reference internal" href="#utilities.plot_contours" title="utilities.plot_contours"><code class="xref py py-obj docutils literal"><span class="pre">utilities.plot_contours</span></code></a>(A,&nbsp;Cn[,&nbsp;thr,&nbsp;...])</td>
 <td>Plots contour of spatial components against a background image and returns their coordinates</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="#utilities.view_patches" title="utilities.view_patches"><code class="xref py py-obj docutils literal"><span class="pre">utilities.view_patches</span></code></a>(Yr,&nbsp;A,&nbsp;C,&nbsp;b,&nbsp;f,&nbsp;d1,&nbsp;d2)</td>
-<td>view spatial and temporal components (secs=0 interactive)</td>
+<tr class="row-even"><td><a class="reference internal" href="#utilities.view_patches_bar" title="utilities.view_patches_bar"><code class="xref py py-obj docutils literal"><span class="pre">utilities.view_patches_bar</span></code></a>(Yr,&nbsp;A,&nbsp;C,&nbsp;b,&nbsp;f,&nbsp;...)</td>
+<td>view spatial and temporal components interactively</td>
 </tr>
 <tr class="row-odd"><td><a class="reference internal" href="#utilities.order_components" title="utilities.order_components"><code class="xref py py-obj docutils literal"><span class="pre">utilities.order_components</span></code></a>(A,&nbsp;C)</td>
 <td>Order components based on their maximum temporal value and size</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="#utilities.extract_DF_F" title="utilities.extract_DF_F"><code class="xref py py-obj docutils literal"><span class="pre">utilities.extract_DF_F</span></code></a>(Y,&nbsp;A,&nbsp;C[,&nbsp;i])</td>
-<td>Extract DF/F values from spatial/temporal components and background</td>
+<tr class="row-even"><td><a class="reference internal" href="#utilities.manually_refine_components" title="utilities.manually_refine_components"><code class="xref py py-obj docutils literal"><span class="pre">utilities.manually_refine_components</span></code></a>(Y,&nbsp;(dx,&nbsp;...)</td>
+<td>Plots contour of spatial components against a background image and allows to interactively add novel components by clicking with mouse</td>
 </tr>
 </tbody>
 </table>
@@ -608,6 +604,53 @@ and moves it in the front</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="utilities.view_patches_bar">
+<code class="descclassname">utilities.</code><code class="descname">view_patches_bar</code><span class="sig-paren">(</span><em>Yr</em>, <em>A</em>, <em>C</em>, <em>b</em>, <em>f</em>, <em>d1</em>, <em>d2</em>, <em>YrA=None</em>, <em>secs=1</em>, <em>img=None</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.view_patches_bar" title="Permalink to this definition">¶</a></dt>
+<dd><p>view spatial and temporal components interactively</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Yr:    np.ndarray</strong></p>
+<blockquote>
+<div><p>movie in format pixels (d) x frames (T)</p>
+</div></blockquote>
+<p><strong>A:     sparse matrix</strong></p>
+<blockquote>
+<div><p>matrix of spatial components (d x K)</p>
+</div></blockquote>
+<p><strong>C:     np.ndarray</strong></p>
+<blockquote>
+<div><p>matrix of temporal components (K x T)</p>
+</div></blockquote>
+<p><strong>b:     np.ndarray</strong></p>
+<blockquote>
+<div><p>spatial background (vector of length d)</p>
+</div></blockquote>
+<p><strong>f:     np.ndarray</strong></p>
+<blockquote>
+<div><p>temporal background (vector of length T)</p>
+</div></blockquote>
+<p><strong>d1,d2: np.ndarray</strong></p>
+<blockquote>
+<div><p>frame dimensions</p>
+</div></blockquote>
+<p><strong>YrA:   np.ndarray</strong></p>
+<blockquote>
+<div><p>ROI filtered residual as it is given from update_temporal_components
+If not given, then it is computed (K x T)</p>
+</div></blockquote>
+<p><strong>img:   np.ndarray</strong></p>
+<blockquote class="last">
+<div><p>background image for contour plotting. Default is the image of all spatial components (d1 x d2)</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="utilities.view_patches">
 <code class="descclassname">utilities.</code><code class="descname">view_patches</code><span class="sig-paren">(</span><em>Yr</em>, <em>A</em>, <em>C</em>, <em>b</em>, <em>f</em>, <em>d1</em>, <em>d2</em>, <em>YrA=None</em>, <em>secs=1</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.view_patches" title="Permalink to this definition">¶</a></dt>
 <dd><p>view spatial and temporal components (secs=0 interactive)</p>
@@ -656,6 +699,168 @@ If not given, then it is computed (K x T)</p>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="function">
+<dt id="utilities.manually_refine_components">
+<code class="descclassname">utilities.</code><code class="descname">manually_refine_components</code><span class="sig-paren">(</span><em>Y</em>, <em>(dx</em>, <em>dy)</em>, <em>A</em>, <em>C</em>, <em>Cn</em>, <em>thr=0.9</em>, <em>display_numbers=True</em>, <em>max_number=None</em>, <em>cmap=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.manually_refine_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots contour of spatial components against a background image and allows to interactively add novel components by clicking with mouse</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Y: ndarray</strong></p>
+<blockquote>
+<div><p>movie in 2D</p>
+</div></blockquote>
+<p><strong>(dx,dy): tuple</strong></p>
+<blockquote>
+<div><p>dimensions of the square used to identify neurons (should be set to the galue of gsiz)</p>
+</div></blockquote>
+<p><strong>A:   np.ndarray or sparse matrix</strong></p>
+<blockquote>
+<div><p>Matrix of Spatial components (d x K)</p>
+</div></blockquote>
+<p><strong>Cn:  np.ndarray (2D)</strong></p>
+<blockquote>
+<div><p>Background image (e.g. mean, correlation)</p>
+</div></blockquote>
+<p><strong>thr: scalar between 0 and 1</strong></p>
+<blockquote>
+<div><p>Energy threshold for computing contours (default 0.995)</p>
+</div></blockquote>
+<p><strong>display_number:     Boolean</strong></p>
+<blockquote>
+<div><p>Display number of ROIs if checked (default True)</p>
+</div></blockquote>
+<p><strong>max_number:    int</strong></p>
+<blockquote>
+<div><p>Display the number for only the first max_number components (default None, display all numbers)</p>
+</div></blockquote>
+<p><strong>cmap:     string</strong></p>
+<blockquote>
+<div><p>User specifies the colormap (default None, default colormap)</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A: np.ndarray</p>
+<blockquote>
+<div><p>matrix A os estimated  spatial component contributions</p>
+</div></blockquote>
+<p>C: np.ndarray</p>
+<blockquote class="last">
+<div><p>array of estimated calcium traces</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="utilities.nb_view_patches">
+<code class="descclassname">utilities.</code><code class="descname">nb_view_patches</code><span class="sig-paren">(</span><em>Yr</em>, <em>A</em>, <em>C</em>, <em>b</em>, <em>f</em>, <em>d1</em>, <em>d2</em>, <em>image_neurons=None</em>, <em>thr=0.99</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.nb_view_patches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interactive plotting utility for ipython notbook</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Yr: np.ndarray</strong></p>
+<blockquote>
+<div><p>movie</p>
+</div></blockquote>
+<p><strong>A,C,b,f: np.ndarrays</strong></p>
+<blockquote>
+<div><p>outputs of matrix factorization algorithm</p>
+</div></blockquote>
+<p><strong>d1,d2: floats</strong></p>
+<blockquote>
+<div><p>dimensions of movie (x and y)</p>
+</div></blockquote>
+<p><strong>image_neurons: np.ndarray</strong></p>
+<blockquote>
+<div><p>image to be overlaid to neurons (for instance the average)</p>
+</div></blockquote>
+<p><strong>thr: double</strong></p>
+<blockquote class="last">
+<div><p>threshold regulating the extent of the displayed patches</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="utilities.nb_imshow">
+<code class="descclassname">utilities.</code><code class="descname">nb_imshow</code><span class="sig-paren">(</span><em>image</em>, <em>cmap='jet'</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.nb_imshow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interactive equivalent of imshow for ipython notebook</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utilities.nb_plot_contour">
+<code class="descclassname">utilities.</code><code class="descname">nb_plot_contour</code><span class="sig-paren">(</span><em>image</em>, <em>A</em>, <em>d1</em>, <em>d2</em>, <em>thr=0.995</em>, <em>face_color=None</em>, <em>line_color='black'</em>, <em>alpha=0.4</em>, <em>line_width=2</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.nb_plot_contour" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interactive Equivalent of plot_contours for ipython notebook</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>A:   np.ndarray or sparse matrix</strong></p>
+<blockquote>
+<div><p>Matrix of Spatial components (d x K)</p>
+</div></blockquote>
+<p><strong>Image:  np.ndarray (2D)</strong></p>
+<blockquote>
+<div><p>Background image (e.g. mean, correlation)</p>
+</div></blockquote>
+<p><strong>d1,d2: floats</strong></p>
+<blockquote>
+<div><p>dimensions os image</p>
+</div></blockquote>
+<p><strong>thr: scalar between 0 and 1</strong></p>
+<blockquote>
+<div><p>Energy threshold for computing contours (default 0.995)</p>
+</div></blockquote>
+<p><strong>display_number:     Boolean</strong></p>
+<blockquote>
+<div><p>Display number of ROIs if checked (default True)</p>
+</div></blockquote>
+<p><strong>max_number:    int</strong></p>
+<blockquote>
+<div><p>Display the number for only the first max_number components (default None, display all numbers)</p>
+</div></blockquote>
+<p><strong>cmap:     string</strong></p>
+<blockquote class="last">
+<div><p>User specifies the colormap (default None, default colormap)</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="utilities.start_server">
+<code class="descclassname">utilities.</code><code class="descname">start_server</code><span class="sig-paren">(</span><em>ncpus</em><span class="sig-paren">)</span><a class="headerlink" href="#utilities.start_server" title="Permalink to this definition">¶</a></dt>
+<dd><p>programmatically start the ipyparallel server</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>ncpus: int</strong></p>
+<blockquote class="last">
+<div><p>number of processors</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="utilities.stop_server">
+<code class="descclassname">utilities.</code><code class="descname">stop_server</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#utilities.stop_server" title="Permalink to this definition">¶</a></dt>
+<dd><p>programmatically stops the ipyparallel server</p>
 </dd></dl>
 
 <dl class="function">
@@ -755,9 +960,6 @@ If not given, then it is computed (K x T)</p>
   <h4>Previous topic</h4>
   <p class="topless"><a href="Overview.html"
                         title="previous chapter">Overview</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="API reference.html"
-                        title="next chapter">API Reference</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -788,9 +990,6 @@ If not given, then it is computed (K x T)</p>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="API reference.html" title="API Reference"
-             >next</a> |</li>
         <li class="right" >
           <a href="Overview.html" title="Overview"
              >previous</a> |</li>
